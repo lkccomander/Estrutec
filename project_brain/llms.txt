@@ -1,0 +1,149 @@
+Project: Elatilo
+Purpose: Expense registration system with budgets, receipts, approvals, attachments, authentication, and PostgreSQL-backed business rules.
+
+Current stack:
+- Backend: FastAPI + psycopg + PostgreSQL
+- Frontend: React 19 + Vite + TypeScript
+- UI extras: react-icons + xlsx + local brand assets
+- Auth: JWT with python-jose, passlib, argon2
+- Database: PostgreSQL with SQL functions, triggers, and startup compatibility scripts
+
+Repository structure:
+- backend/
+- frontend/
+- DATABASE/
+- project_brain/
+- ARQUITECTURA/
+
+Important backend architecture:
+- backend/main.py creates FastAPI app
+- backend/main.py contains _run_startup_migrations()
+- backend/app/api/routes/ contains HTTP endpoints
+- backend/app/services/ contains business orchestration
+- backend/app/repositories/ contains SQL access
+- backend/app/schemas/ contains Pydantic schemas
+- backend/app/db/connection.py contains DB connection utilities
+
+Startup database compatibility:
+- FastAPI startup runs _run_startup_migrations()
+- DB.SQL is executed on every startup
+- DATABASE/migrations/*.sql are executed once
+- applied migrations are tracked in app_migration_log
+
+Current main entities:
+- usuario
+- t_proyectos
+- presupuesto
+- comprobante
+- adjunto
+- movimiento_presupuesto
+
+Important database rules:
+- proyecto is the parent context for presupuesto
+- proyecto.nombre_proyecto must be unique
+- proyecto can be archived/reactivated through activo flag
+- presupuesto has its own currency
+- comprobante has its own currency
+- if receipt currency differs from budget currency, tipo_cambio is required
+- monto_presupuesto stores converted amount in budget currency
+- normal approval consumes budget saldo_disponible using monto_presupuesto
+- CAJA_CHICA approval increases presupuesto.monto_total and saldo_disponible
+- approval/rejection should go through SQL functions, not direct status updates
+
+Important SQL functions:
+- aprobar_comprobante()
+- rechazar_comprobante()
+- set_updated_at()
+- blockers for editing/deleting approved receipts and their attachments
+
+Auth endpoints:
+- POST /auth/register
+- POST /auth/login
+- GET /auth/me
+
+User endpoints:
+- GET /usuarios
+- GET /usuarios/{usuario_id}
+- PATCH /usuarios/{usuario_id}
+- PATCH /usuarios/{usuario_id}/activar
+- PATCH /usuarios/{usuario_id}/desactivar
+
+Budget endpoints:
+- GET /presupuestos
+- POST /presupuestos
+- GET /presupuestos/{presupuesto_id}
+- PATCH /presupuestos/{presupuesto_id}
+- DELETE /presupuestos/{presupuesto_id}
+- GET /presupuestos/{presupuesto_id}/movimientos
+
+Receipt endpoints:
+- GET /comprobantes
+- POST /comprobantes
+- GET /comprobantes/{comprobante_id}
+- PATCH /comprobantes/{comprobante_id}
+- DELETE /comprobantes/{comprobante_id}
+- POST /comprobantes/{comprobante_id}/aprobar
+- POST /comprobantes/{comprobante_id}/rechazar
+
+Attachment endpoints:
+- GET /comprobantes/{comprobante_id}/adjuntos
+- POST /comprobantes/{comprobante_id}/adjuntos
+- DELETE /comprobantes/{comprobante_id}/adjuntos/{adjunto_id}
+
+Frontend behavior:
+- Login screen is decoupled from dashboard
+- Dashboard only appears after authentication
+- Frontend stores JWT in localStorage
+- Frontend talks to backend through VITE_API_URL
+- frontend/.env currently points to http://192.1.50.169:8000
+- App.tsx is still the main orchestrator, but projects/budgets/users/icons already have extracted modules
+- First authenticated screen focuses on budgets
+- The first authenticated budget entry is referred to visually as dashboard1
+- dashboard1 now focuses on project maintenance and project listing
+- each listed project has its own Presupuestos button with PiPiggyBankBold
+- selected project opens a dedicated per-project budget section
+- clicking a budget opens a dedicated budget dashboard
+- Budget detail flow contains receipts, movements, and attachments scoped to that budget
+- Frontend supports:
+  - login/register
+  - list/create/update users
+  - activate/deactivate users
+  - create/list/archive/activate projects
+  - create/list budgets by project
+  - create/list receipts
+  - approve/reject receipts
+  - list movements for selected budget
+  - list/create/delete attachments for selected receipt
+  - request exchange rate when receipt currency differs from budget currency
+  - handle CAJA_CHICA in forms and lists
+  - export approved receipts to Excel
+  - switch between dark/light theme
+  - browse a React icon gallery
+  - contextual per-action feedback below action buttons
+  - budget detail summary card aligned structurally with receipt panels
+
+Current important decisions:
+- keep backend layered and simple
+- keep critical state transitions in SQL
+- support multi-currency with explicit user-provided exchange rate
+- support CAJA_CHICA as a budget-funding receipt type
+- cast enum values explicitly in SQL CASE expressions when needed
+- grow frontend features pragmatically while extracting reusable dashboards
+- use project as the main navigation context before budgets
+- default project filtering to active projects
+- prefer direct action placement inside project cards over detached navigation controls
+
+Known operational requirement:
+- DATABASE_URL user must have enough DB permissions for startup compatibility scripts
+
+Known pending items:
+- frontend/index.html and frontend/vite.config.ts still look like Vite defaults
+- user password change is still pending a backend endpoint
+- App.tsx still needs more extraction despite the new modules
+- visual polish is still iterative in the budget-detail header area
+
+Useful project memory files:
+- project_brain/decision.md
+- project_brain/umldiagrams.md
+- DATABASE/notes.md
+- DATABASE/DB.SQL
