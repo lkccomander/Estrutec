@@ -773,10 +773,12 @@ function App() {
       return
     }
 
+    const activeToken = token
+
     async function syncStoredSession() {
       try {
         setIsBusy(true)
-        await loadProtectedData(token)
+        await loadProtectedData(activeToken)
       } catch {
         setStatusMessage('La sesion guardada ya no es valida. Inicia sesion de nuevo.')
         localStorage.removeItem('elatilo_token')
@@ -2184,8 +2186,8 @@ function App() {
         </div>
 
         {activeDashboard === 'home' || activeDashboard === 'budgets' || activeDashboard === 'budget-detail' || activeDashboard === 'accounts' ? null : (
-          <div className={`health-layout ${activeDashboard === 'budget-detail' ? 'detail-health-layout' : ''}`}>
-            <article className={`health-card ${activeDashboard === 'budget-detail' ? 'detail-active-card' : ''}`}>
+          <div className="health-layout">
+            <article className="health-card">
               <h3>
                 {activeDashboard === 'users'
                   ? 'Resumen de usuarios'
@@ -2296,8 +2298,7 @@ function App() {
               )}
             </article>
 
-            {activeDashboard === 'budget-detail' ? null : (
-              <article className="health-card">
+            <article className="health-card">
               <h3>{activeDashboard === 'users' ? 'Mantenimientos' : activeDashboard === 'icons' ? 'Uso sugerido' : 'Estado del entorno'}</h3>
               {activeDashboard === 'users' ? (
                 <>
@@ -2333,7 +2334,7 @@ function App() {
                 </>
               )}
               </article>
-            )}
+            </article>
           </div>
         )}
 

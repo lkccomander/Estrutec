@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { ActionFeedback } from '../../components/ActionFeedback'
 
 type Currency = 'CRC' | 'USD'
+type BudgetState = 'ACTIVO' | 'AGOTADO' | 'CERRADO'
 
 type Project = {
   proyecto_id: string
@@ -33,7 +34,7 @@ type BudgetMaintenanceForm = {
   categoria: string
   monto_total: string
   moneda: Currency
-  estado: string
+  estado: BudgetState
 }
 
 type FeedbackTone = 'warning' | 'success' | 'info'
@@ -231,11 +232,13 @@ export function ProjectBudgetsDashboard({
             </select>
           </label>
           <label className="field">
-            <span>Estado</span>
+              <span>Estado</span>
             <select
               className="select"
               value={budgetMaintenanceForm.estado}
-              onChange={(event) => onBudgetMaintenanceFormChange({ estado: event.target.value })}
+              onChange={(event) =>
+                onBudgetMaintenanceFormChange({ estado: event.target.value as BudgetState })
+              }
             >
               <option value="ACTIVO">ACTIVO</option>
               <option value="AGOTADO">AGOTADO</option>

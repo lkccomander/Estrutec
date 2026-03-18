@@ -13,8 +13,14 @@ import { MdAttachFile, MdDashboard, MdOutlineAccountBalanceWallet, MdOutlinePaym
 import { PiChartPieSliceBold, PiReceiptBold, PiPiggyBankBold, PiWalletBold } from 'react-icons/pi'
 import { TbCoins, TbFolderDollar, TbReportMoney, TbTransferIn } from 'react-icons/tb'
 import { IoBusinessOutline, IoCashOutline, IoDocumentTextOutline, IoPeopleOutline } from 'react-icons/io5'
+import type { IconType } from 'react-icons'
 
-const iconGroups = [
+type IconGroup = {
+  title: string
+  items: Array<[string, IconType]>
+}
+
+const iconGroups: IconGroup[] = [
   {
     title: 'Heroicons',
     items: [
