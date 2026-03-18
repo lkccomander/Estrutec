@@ -381,6 +381,7 @@ export function BudgetsDashboard({
             const consumed = Math.max(total - available, 0)
             const availablePercent = total > 0 ? (available / total) * 100 : 0
             const consumedPercent = total > 0 ? (consumed / total) * 100 : 0
+            const isClosed = budget.estado === 'CERRADO'
 
             return (
               <article
@@ -406,11 +407,11 @@ export function BudgetsDashboard({
                   </div>
                   <div className="budget-bar-track" aria-hidden="true">
                     <div
-                      className="budget-bar-fill budget-bar-consumed"
+                      className={`budget-bar-fill ${isClosed ? 'budget-bar-closed' : 'budget-bar-consumed'}`}
                       style={{ width: `${Math.min(consumedPercent, 100)}%` }}
                     />
                     <div
-                      className="budget-bar-fill budget-bar-available"
+                      className={`budget-bar-fill ${isClosed ? 'budget-bar-closed' : 'budget-bar-available'}`}
                       style={{ width: `${Math.min(availablePercent, 100)}%` }}
                     />
                   </div>

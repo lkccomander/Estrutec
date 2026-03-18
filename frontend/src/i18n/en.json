@@ -1,0 +1,81 @@
+{
+  "app": {
+    "title": "Estrutec Expenses",
+    "subtitle": "Connect FastAPI, authenticate users, and manage expenses from a single panel.",
+    "skipToPanel": "Skip to panel",
+    "lastUpdate": "Last update"
+  },
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode"
+  },
+  "language": {
+    "switchTo": "ES"
+  },
+  "auth": {
+    "eyebrow": "Elatilo / financial control",
+    "loginRequired": "Sign in first. The panel only appears after authentication.",
+    "api": "API",
+    "localDb": "Local database",
+    "status": "Status",
+    "noResponse": "No response",
+    "pending": "pending",
+    "loginTitle": "Sign in",
+    "registerTitle": "Create account",
+    "connectApi": "Connect to your local API and enter the panel.",
+    "loginTab": "Login",
+    "registerTab": "Register",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "role": "Role",
+    "loginBusy": "Signing in...",
+    "loginAction": "Enter panel",
+    "registerBusy": "Creating...",
+    "registerAction": "Create account",
+    "roles": {
+      "REGISTRADOR": "Recorder",
+      "APROBADOR": "Approver",
+      "ADMIN": "Admin"
+    }
+  },
+  "dashboardLabels": {
+    "home": "Dashboard",
+    "accounts": "Accounts Dashboard",
+    "users": "Users Dashboard",
+    "icons": "Icons Dashboard",
+    "budgetDetail": "Active Budget Dashboard",
+    "projects": "Projects Dashboard",
+    "budgets": "Budgets Dashboard"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "users": "Users",
+    "icons": "Icons",
+    "accounts": "Accounts",
+    "sync": "Sync",
+    "logout": "Log out",
+    "backToBudgets": "Back to budgets"
+  },
+  "summary": {
+    "activeProjects": "Active Projects",
+    "activeProjectsMeta": "Projects currently marked as active",
+    "activeBudgets": "Active Budgets",
+    "receipts": "Receipts",
+    "cashboxReceipts": "Petty Cash Receipts"
+  },
+  "transfer": {
+    "badge": "Local transfer",
+    "title": "LOCAL TRANSFER INFORMATION",
+    "client": "Client",
+    "idNumber": "ID number",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "iban": "IBAN account number",
+    "bcrTitle": "BCR account information",
+    "savingsAccount": "Savings account",
+    "dollars": "US dollars"
+  }
+}

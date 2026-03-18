@@ -28,6 +28,14 @@ type BudgetForm = {
   moneda: Currency
 }
 
+type BudgetMaintenanceForm = {
+  proyecto_id: string
+  categoria: string
+  monto_total: string
+  moneda: Currency
+  estado: string
+}
+
 type FeedbackTone = 'warning' | 'success' | 'info'
 
 type ActionFeedbackState = {
@@ -40,12 +48,17 @@ type ProjectBudgetsDashboardProps = {
   projects: Project[]
   budgets: Budget[]
   budgetForm: BudgetForm
+  budgetMaintenanceForm: BudgetMaintenanceForm
   selectedProjectId: string
   selectedBudgetId: string
+  selectedBudget: Budget | null
   isBusy: boolean
   actionFeedback: ActionFeedbackState
   onBudgetFormChange: (patch: Partial<BudgetForm>) => void
+  onBudgetMaintenanceFormChange: (patch: Partial<BudgetMaintenanceForm>) => void
   onCreateBudget: (event: FormEvent<HTMLFormElement>) => void
+  onSelectBudget: (budgetId: string) => void
+  onUpdateBudget: (event: FormEvent<HTMLFormElement>) => void
   onOpenBudget: (budgetId: string) => void
   onBackToProjects: () => void
   formatMoney: (amount: string, currency: Currency) => string
@@ -55,12 +68,17 @@ export function ProjectBudgetsDashboard({
   projects,
   budgets,
   budgetForm,
+  budgetMaintenanceForm,
   selectedProjectId,
   selectedBudgetId,
+  selectedBudget,
   isBusy,
   actionFeedback,
   onBudgetFormChange,
+  onBudgetMaintenanceFormChange,
   onCreateBudget,
+  onSelectBudget,
+  onUpdateBudget,
   onOpenBudget,
   onBackToProjects,
   formatMoney,
@@ -146,6 +164,99 @@ export function ProjectBudgetsDashboard({
 
       <article className="card-group">
         <div className="section-title">
+          <h2>Mantenimiento de presupuesto</h2>
+          <span className="list-meta">
+            {selectedBudget?.categoria ?? 'Selecciona un presupuesto'}
+          </span>
+        </div>
+        <form className="form-grid two-columns" onSubmit={onUpdateBudget}>
+          <label className="field">
+            <span>Presupuesto</span>
+            <select
+              className="select"
+              value={selectedBudgetId}
+              onChange={(event) => onSelectBudget(event.target.value)}
+            >
+              <option value="">Selecciona un presupuesto</option>
+              {visibleBudgets.map((budget) => (
+                <option key={budget.presupuesto_id} value={budget.presupuesto_id}>
+                  {budget.categoria} ({budget.moneda})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Proyecto</span>
+            <select
+              className="select"
+              value={budgetMaintenanceForm.proyecto_id}
+              onChange={(event) => onBudgetMaintenanceFormChange({ proyecto_id: event.target.value })}
+            >
+              <option value="">Selecciona un proyecto</option>
+              {activeProjectOptions.map((project) => (
+                <option key={project.proyecto_id} value={project.proyecto_id}>
+                  {project.nombre_proyecto}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Nombre del presupuesto</span>
+            <input
+              className="input"
+              value={budgetMaintenanceForm.categoria}
+              onChange={(event) => onBudgetMaintenanceFormChange({ categoria: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Monto total</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="0.01"
+              value={budgetMaintenanceForm.monto_total}
+              onChange={(event) => onBudgetMaintenanceFormChange({ monto_total: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Moneda</span>
+            <select
+              className="select"
+              value={budgetMaintenanceForm.moneda}
+              onChange={(event) => onBudgetMaintenanceFormChange({ moneda: event.target.value as Currency })}
+            >
+              <option value="CRC">CRC</option>
+              <option value="USD">USD</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Estado</span>
+            <select
+              className="select"
+              value={budgetMaintenanceForm.estado}
+              onChange={(event) => onBudgetMaintenanceFormChange({ estado: event.target.value })}
+            >
+              <option value="ACTIVO">ACTIVO</option>
+              <option value="AGOTADO">AGOTADO</option>
+              <option value="CERRADO">CERRADO</option>
+            </select>
+          </label>
+          <div className="field">
+            <span>&nbsp;</span>
+            <button className="sync-btn" type="submit" disabled={isBusy || !selectedBudgetId}>
+              Actualizar presupuesto
+            </button>
+            <ActionFeedback
+              message={actionFeedback?.target === 'budget-update' ? actionFeedback.message : null}
+              tone={actionFeedback?.tone}
+            />
+          </div>
+        </form>
+      </article>
+
+      <article className="card-group">
+        <div className="section-title">
           <h2>Presupuestos</h2>
           <span className="list-meta">{visibleBudgets.length} registros</span>
         </div>
@@ -156,6 +267,7 @@ export function ProjectBudgetsDashboard({
             const consumed = Math.max(total - available, 0)
             const availablePercent = total > 0 ? (available / total) * 100 : 0
             const consumedPercent = total > 0 ? (consumed / total) * 100 : 0
+            const isClosed = budget.estado === 'CERRADO'
 
             return (
               <article
@@ -180,11 +292,11 @@ export function ProjectBudgetsDashboard({
                   </div>
                   <div className="budget-bar-track" aria-hidden="true">
                     <div
-                      className="budget-bar-fill budget-bar-consumed"
+                      className={`budget-bar-fill ${isClosed ? 'budget-bar-closed' : 'budget-bar-consumed'}`}
                       style={{ width: `${Math.min(consumedPercent, 100)}%` }}
                     />
                     <div
-                      className="budget-bar-fill budget-bar-available"
+                      className={`budget-bar-fill ${isClosed ? 'budget-bar-closed' : 'budget-bar-available'}`}
                       style={{ width: `${Math.min(availablePercent, 100)}%` }}
                     />
                   </div>

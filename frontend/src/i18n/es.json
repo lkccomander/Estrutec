@@ -1,0 +1,81 @@
+{
+  "app": {
+    "title": "Estrutec Gastos",
+    "subtitle": "Conecta FastAPI, autentica usuarios y registra gastos desde un solo panel.",
+    "skipToPanel": "Ir al panel",
+    "lastUpdate": "Ultima actualizacion"
+  },
+  "theme": {
+    "light": "Modo claro",
+    "dark": "Modo oscuro"
+  },
+  "language": {
+    "switchTo": "EN"
+  },
+  "auth": {
+    "eyebrow": "Elatilo / control financiero",
+    "loginRequired": "Ingresa primero. El panel aparece solo despues de autenticarte.",
+    "api": "API",
+    "localDb": "Base local",
+    "status": "Estado",
+    "noResponse": "Sin respuesta",
+    "pending": "pendiente",
+    "loginTitle": "Iniciar sesion",
+    "registerTitle": "Crear cuenta",
+    "connectApi": "Conecta con tu API local y entra al panel.",
+    "loginTab": "Login",
+    "registerTab": "Registro",
+    "email": "Email",
+    "password": "Password",
+    "name": "Nombre",
+    "role": "Rol",
+    "loginBusy": "Entrando...",
+    "loginAction": "Entrar al panel",
+    "registerBusy": "Creando...",
+    "registerAction": "Crear cuenta",
+    "roles": {
+      "REGISTRADOR": "Registrador",
+      "APROBADOR": "Aprobador",
+      "ADMIN": "Admin"
+    }
+  },
+  "dashboardLabels": {
+    "home": "Dashboard",
+    "accounts": "Dashboard de Cuentas",
+    "users": "Dashboard de Usuarios",
+    "icons": "Dashboard de Iconos",
+    "budgetDetail": "Dashboard de Presupuesto Activo",
+    "projects": "Dashboard de Proyectos",
+    "budgets": "Dashboard de Presupuestos"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "projects": "Proyectos",
+    "users": "Usuarios",
+    "icons": "Iconos",
+    "accounts": "Cuentas",
+    "sync": "Sincronizar",
+    "logout": "Cerrar sesion",
+    "backToBudgets": "Volver a presupuestos"
+  },
+  "summary": {
+    "activeProjects": "Proyectos activos",
+    "activeProjectsMeta": "Proyectos marcados actualmente como activos",
+    "activeBudgets": "Presupuestos activos",
+    "receipts": "Comprobantes",
+    "cashboxReceipts": "Comprobantes de caja chica"
+  },
+  "transfer": {
+    "badge": "Transferencia local",
+    "title": "INFORMACION PARA TRANSFERENCIA LOCAL",
+    "client": "Cliente",
+    "idNumber": "Cedula",
+    "address": "Direccion",
+    "phone": "Telefono",
+    "email": "Email",
+    "iban": "Numero de cuenta IBAN",
+    "bcrTitle": "Informacion de cuenta BCR",
+    "savingsAccount": "Cuenta Ahorros",
+    "dollars": "Dolares"
+  }
+}

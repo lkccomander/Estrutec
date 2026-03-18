@@ -237,3 +237,37 @@ Motivo:
 - acercar la accion al dato
 - reducir pasos para navegar por proyecto
 - mejorar claridad visual de que los presupuestos pertenecen a un proyecto concreto
+
+## 15. El panel superior de navegacion se denomina menu
+
+Se decidio estandarizar el nombre del panel superior que contiene los botones de navegacion.
+
+Decision:
+
+- el panel superior con botones de dashboards se llama `menu`
+- `Dashboard` queda como vista limpia de entrada
+- `Proyectos`, `Usuarios`, `Iconos` y `Cuentas` cuelgan del mismo `menu`
+- el panel flotante de vidrio con informacion bancaria vive en `Cuentas`
+- `Cuentas` se mantiene como dashboard limpio y dedicado a esa informacion
+
+Motivo:
+
+- mejorar la referencia conversacional entre usuario y agente
+- evitar ambiguedad al pedir cambios en la navegacion superior
+- separar la informacion bancaria del resto de dashboards operativos
+
+## 16. Presupuestos cerrados deben verse neutros en los bar plots
+
+Se decidio que los presupuestos en estado `CERRADO` no deben usar la codificacion visual activa de consumo/disponible.
+
+Decision:
+
+- si un presupuesto esta `CERRADO`, sus horizontal bar plots deben mostrarse en gris
+- el gris debe comunicar estado inactivo o congelado, no progreso operativo
+- esta regla aplica especialmente en listados y tarjetas donde se comparan presupuestos
+
+Motivo:
+
+- evitar que un presupuesto cerrado parezca todavia operativo
+- reducir lectura incorrecta del estado financiero por color
+- mantener consistencia visual entre estado funcional y representacion grafica

@@ -1,9 +1,17 @@
 import { startTransition, useDeferredValue, useEffect, useState, type FormEvent } from 'react'
-import { HiOutlineAcademicCap, HiOutlineExclamationTriangle, HiOutlineUsers } from 'react-icons/hi2'
-import { MdAttachFile, MdOutlineFileDownload } from 'react-icons/md'
-import { PiPiggyBankBold } from 'react-icons/pi'
+import {
+  HiOutlineAcademicCap,
+  HiOutlineChartBar,
+  HiOutlineDocumentText,
+  HiOutlineExclamationTriangle,
+  HiOutlineFolderOpen,
+  HiOutlineUsers,
+} from 'react-icons/hi2'
+import { IoBusinessOutline } from 'react-icons/io5'
+import { MdAttachFile, MdOutlineFileDownload, MdOutlinePayments } from 'react-icons/md'
 import './App.css'
 import { ActionFeedback } from './components/ActionFeedback'
+import { useI18n } from './i18n'
 import { IconsDashboard } from './modules/icons/IconsDashboard'
 import { ProjectBudgetsDashboard } from './modules/budgets/ProjectBudgetsDashboard'
 import { ProjectsDashboard } from './modules/projects/ProjectsDashboard'
@@ -12,6 +20,8 @@ import { UsersDashboard } from './modules/users/UsersDashboard'
 type Role = 'ADMIN' | 'APROBADOR' | 'REGISTRADOR'
 type Currency = 'CRC' | 'USD'
 type ReceiptType = 'FACTURA_FOTO' | 'SINPE_MOVIL' | 'CAJA_CHICA'
+
+type BudgetState = 'ACTIVO' | 'AGOTADO' | 'CERRADO'
 
 type AuthUser = {
   usuario_id: string
@@ -121,25 +131,6 @@ type ActionFeedbackState = {
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
-const localTransferDetails = {
-  title: 'INFORMACION PARA TRANSFERENCIA LOCAL',
-  clientName: 'EDWIN FERNANDO PEREZ ALVARADO',
-  idNumber: '109860887',
-  address: 'San Jose, Aserri, Centro. Urb Vista al Valle, casa 21C',
-  phone: '6073-0043',
-  email: 'edperez@cfia.or.cr',
-  accounts: [
-    {
-      bank: 'DAVIVIENDA DOLARES',
-      iban: 'CR44010402842616835121',
-    },
-    {
-      bank: 'DAVIVIENDA COLONES',
-      iban: 'CR94010402842616834415',
-    },
-  ],
-}
-
 const currencyFormatter = new Intl.NumberFormat('es-CR', {
   style: 'currency',
   currency: 'CRC',
@@ -152,6 +143,21 @@ function formatMoney(amount: string, currency: Currency) {
     currency,
     maximumFractionDigits: 2,
   }).format(Number(amount))
+}
+
+function formatGroupedMoney(entries: Array<{ amount: string; currency: Currency }>) {
+  const totals = entries.reduce<Record<Currency, number>>(
+    (accumulator, entry) => {
+      accumulator[entry.currency] += Number(entry.amount)
+      return accumulator
+    },
+    { CRC: 0, USD: 0 },
+  )
+
+  return (Object.entries(totals) as Array<[Currency, number]>)
+    .filter(([, total]) => total > 0)
+    .map(([currency, total]) => formatMoney(total.toFixed(2), currency))
+    .join(' | ')
 }
 
 function getStatusTone(message: string) {
@@ -231,10 +237,11 @@ async function request<T>(
 }
 
 function App() {
+  const { t, toggleLanguage } = useI18n()
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('elatilo_token'))
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [activeDashboard, setActiveDashboard] = useState<'budgets' | 'budget-detail' | 'users' | 'icons'>(
-    'budgets',
+  const [activeDashboard, setActiveDashboard] = useState<'home' | 'budgets' | 'budget-detail' | 'users' | 'icons' | 'accounts'>(
+    'home',
   )
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
   const [health, setHealth] = useState<Health | null>(null)
@@ -274,6 +281,13 @@ function App() {
     categoria: '',
     monto_total: '0.00',
     moneda: 'CRC' as Currency,
+  })
+  const [budgetMaintenanceForm, setBudgetMaintenanceForm] = useState({
+    proyecto_id: '',
+    categoria: '',
+    monto_total: '0.00',
+    moneda: 'CRC' as Currency,
+    estado: 'ACTIVO' as BudgetState,
   })
   const [projectForm, setProjectForm] = useState({
     nombre_proyecto: '',
@@ -325,22 +339,64 @@ function App() {
     return true
   })
   const activeProjects = projects.filter((project) => project.activo)
+  const activeBudgets = budgets.filter((budget) => budget.estado === 'ACTIVO')
+  const nonRejectedReceipts = receipts.filter((receipt) => receipt.estado !== 'RECHAZADO')
+  const cashboxReceipts = nonRejectedReceipts.filter((receipt) => receipt.tipo_comprobante === 'CAJA_CHICA')
+  const activeBudgetsTotalLabel =
+    formatGroupedMoney(activeBudgets.map((budget) => ({ amount: budget.monto_total, currency: budget.moneda }))) ||
+    'Sin montos'
+  const receiptsTotalLabel =
+    formatGroupedMoney(nonRejectedReceipts.map((receipt) => ({ amount: receipt.monto_gasto, currency: receipt.moneda }))) ||
+    'Sin montos'
+  const cashboxTotalLabel =
+    formatGroupedMoney(cashboxReceipts.map((receipt) => ({ amount: receipt.monto_gasto, currency: receipt.moneda }))) ||
+    'Sin montos'
+  const localTransferDetails = {
+    title: t('transfer.title'),
+    clientName: 'EDWIN FERNANDO PEREZ ALVARADO',
+    idNumber: '109860887',
+    address: 'San Jose, Aserri, Centro. Urb Vista al Valle, casa 21C',
+    phone: '6073-0043',
+    email: 'edperez@cfia.or.cr',
+    accounts: [
+      {
+        bank: 'DAVIVIENDA DOLARES',
+        iban: 'CR44010402842616835121',
+      },
+      {
+        bank: 'DAVIVIENDA COLONES',
+        iban: 'CR94010402842616834415',
+      },
+    ],
+    bcrAccount: {
+      title: t('transfer.bcrTitle'),
+      holderName: 'PEREZ ALVARADO EDWIN FERNANDO',
+      idNumber: '109860887',
+      iban: 'CR68015202001400187765',
+      accountType: t('transfer.savingsAccount'),
+      currency: t('transfer.dollars'),
+    },
+  }
   const selectedProject = projects.find((project) => project.proyecto_id === selectedProjectId) ?? null
   const selectedBudget = budgets.find((budget) => budget.presupuesto_id === receiptForm.presupuesto_id)
   const selectedBudgetDetails =
     budgets.find((budget) => budget.presupuesto_id === selectedBudgetId) ?? null
   const currentDashboardLabel =
-    activeDashboard === 'users'
-      ? 'Dashboard de Usuarios'
+    activeDashboard === 'home'
+      ? t('dashboardLabels.home')
+      : activeDashboard === 'accounts'
+        ? t('dashboardLabels.accounts')
+      : activeDashboard === 'users'
+      ? t('dashboardLabels.users')
       : activeDashboard === 'icons'
-        ? 'Dashboard de Iconos'
+        ? t('dashboardLabels.icons')
         : activeDashboard === 'budget-detail'
-          ? 'Dashboard de Presupuesto Activo'
+          ? t('dashboardLabels.budgetDetail')
           : budgetSectionView === 'projects'
-            ? 'Dashboard de Proyectos'
+            ? t('dashboardLabels.projects')
             : selectedProject
-              ? `Dashboard de Presupuestos: ${selectedProject.nombre_proyecto}`
-              : 'Dashboard de Presupuestos'
+              ? `${t('dashboardLabels.budgets')}: ${selectedProject.nombre_proyecto}`
+              : t('dashboardLabels.budgets')
   const selectedUser = users.find((user) => user.usuario_id === selectedUserId) ?? null
   const selectedReceipt =
     receipts.find((receipt) => receipt.comprobante_id === selectedReceiptId) ?? null
@@ -545,6 +601,20 @@ function App() {
           },
     )
   }, [selectedBudgetId])
+
+  useEffect(() => {
+    if (!selectedBudgetDetails) {
+      return
+    }
+
+    setBudgetMaintenanceForm({
+      proyecto_id: selectedBudgetDetails.proyecto_id,
+      categoria: selectedBudgetDetails.categoria,
+      monto_total: selectedBudgetDetails.monto_total,
+      moneda: selectedBudgetDetails.moneda,
+      estado: selectedBudgetDetails.estado as BudgetState,
+    })
+  }, [selectedBudgetDetails])
 
   useEffect(() => {
     if (!selectedUser) {
@@ -883,6 +953,37 @@ function App() {
     }
   }
 
+  async function handleBudgetUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token || !selectedBudgetId) {
+      return
+    }
+
+    try {
+      setIsBusy(true)
+      await request<Budget>(
+        `/presupuestos/${selectedBudgetId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            proyecto_id: budgetMaintenanceForm.proyecto_id,
+            categoria: budgetMaintenanceForm.categoria,
+            monto_total: Number(budgetMaintenanceForm.monto_total),
+            moneda: budgetMaintenanceForm.moneda,
+            estado: budgetMaintenanceForm.estado,
+          }),
+        },
+        token,
+      )
+      showActionFeedback('budget-update', 'Presupuesto actualizado.')
+      await refreshDashboard(token, budgetMaintenanceForm.proyecto_id || selectedProjectId)
+    } catch (error) {
+      showActionFeedback('budget-update', error instanceof Error ? error.message : 'No se pudo actualizar el presupuesto.')
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   async function handleProjectCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!token) {
@@ -953,6 +1054,19 @@ function App() {
 
   function returnToProjectsSection() {
     setBudgetSectionView('projects')
+  }
+
+  function openProjectsDashboard() {
+    setActiveDashboard('budgets')
+    setBudgetSectionView('projects')
+  }
+
+  function openHomeDashboard() {
+    setActiveDashboard('home')
+  }
+
+  function openAccountsDashboard() {
+    setActiveDashboard('accounts')
   }
 
   function handleProjectFilterChange(filter: 'active' | 'all' | 'archived') {
@@ -1394,7 +1508,7 @@ function App() {
     showActionFeedback('logout', 'Sesion cerrada.')
   }
 
-  const currentThemeLabel = theme === 'dark' ? 'Modo claro' : 'Modo oscuro'
+  const currentThemeLabel = theme === 'dark' ? t('theme.light') : t('theme.dark')
   const currentHealthClass = health?.status === 'ok' ? 'ok' : 'unknown'
   const currentDbClass = dbHealth?.status === 'ok' ? 'ok' : 'unknown'
   const isAuthenticated = Boolean(token && currentUser)
@@ -1407,6 +1521,7 @@ function App() {
     selectedBudgetTotal > 0 ? (selectedBudgetAvailable / selectedBudgetTotal) * 100 : 0
   const selectedBudgetConsumedPercent =
     selectedBudgetTotal > 0 ? (selectedBudgetConsumed / selectedBudgetTotal) * 100 : 0
+  const selectedBudgetIsClosed = selectedBudgetDetails?.estado === 'CERRADO'
 
   function showActionFeedback(target: string, message: string) {
     const tone = getStatusTone(message)
@@ -1420,30 +1535,30 @@ function App() {
         <img className="login-logo-corner" src="/logo1.jpeg" alt="Elatilo" />
         <section className="login-screen">
           <div className="login-copy">
-            <p className="muted">Elatilo / control financiero</p>
-            <h1>Ingresa primero. El panel aparece solo despues de autenticarte.</h1>
+            <p className="muted">{t('auth.eyebrow')}</p>
+            <h1>{t('auth.loginRequired')}</h1>
             <p className={`sync-status ${statusTone}`}>{statusMessage}</p>
 
             <div className="health-layout">
               <article className="health-card">
-                <h3>API</h3>
+                <h3>{t('auth.api')}</h3>
                 <p className="health-row">
-                  Estado:{' '}
+                  {t('auth.status')}:{' '}
                   <span className={`health-badge ${currentHealthClass}`}>
                     {health?.status ?? 'unknown'}
                   </span>
                 </p>
-                <p className="health-meta">{health?.app ?? 'Sin respuesta'}</p>
+                <p className="health-meta">{health?.app ?? t('auth.noResponse')}</p>
               </article>
               <article className="health-card">
-                <h3>Base local</h3>
+                <h3>{t('auth.localDb')}</h3>
                 <p className="health-row">
-                  Estado:{' '}
+                  {t('auth.status')}:{' '}
                   <span className={`health-badge ${currentDbClass}`}>
                     {dbHealth?.status ?? 'unknown'}
                   </span>
                 </p>
-                <p className="health-meta">{dbHealth?.database ?? 'pendiente'}</p>
+                <p className="health-meta">{dbHealth?.database ?? t('auth.pending')}</p>
               </article>
             </div>
           </div>
@@ -1451,16 +1566,21 @@ function App() {
           <div className="login-card">
             <div className="header-top">
               <div>
-                <h2>{authMode === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}</h2>
-                <p className="muted">Conecta con tu API local y entra al panel.</p>
+                <h2>{authMode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h2>
+                <p className="muted">{t('auth.connectApi')}</p>
               </div>
-              <button
-                className="theme-btn"
-                type="button"
-                onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-              >
-                {currentThemeLabel}
-              </button>
+              <div className="sync-wrap">
+                <button className="theme-btn" type="button" onClick={toggleLanguage}>
+                  {t('language.switchTo')}
+                </button>
+                <button
+                  className="theme-btn"
+                  type="button"
+                  onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+                >
+                  {currentThemeLabel}
+                </button>
+              </div>
             </div>
 
             <div className="tabs">
@@ -1469,21 +1589,21 @@ function App() {
                 type="button"
                 onClick={() => setAuthMode('login')}
               >
-                Login
+                {t('auth.loginTab')}
               </button>
               <button
                 className={`tab-btn ${authMode === 'register' ? 'active' : ''}`}
                 type="button"
                 onClick={() => setAuthMode('register')}
               >
-                Registro
+                {t('auth.registerTab')}
               </button>
             </div>
 
             {authMode === 'login' ? (
               <form className="auth-form" onSubmit={handleLogin}>
                 <label className="field">
-                  <span>Email</span>
+                  <span>{t('auth.email')}</span>
                   <input
                     className="input"
                     type="email"
@@ -1494,7 +1614,7 @@ function App() {
                   />
                 </label>
                 <label className="field">
-                  <span>Password</span>
+                  <span>{t('auth.password')}</span>
                   <input
                     className="input"
                     type="password"
@@ -1505,7 +1625,7 @@ function App() {
                   />
                 </label>
                 <button className="sync-btn" type="submit" disabled={isBusy}>
-                  {isBusy ? 'Entrando...' : 'Entrar al panel'}
+                  {isBusy ? t('auth.loginBusy') : t('auth.loginAction')}
                 </button>
                 <ActionFeedback
                   message={actionFeedback?.target === 'login' ? actionFeedback.message : null}
@@ -1515,7 +1635,7 @@ function App() {
             ) : (
               <form className="auth-form" onSubmit={handleRegister}>
                 <label className="field">
-                  <span>Nombre</span>
+                  <span>{t('auth.name')}</span>
                   <input
                     className="input"
                     value={registerForm.nombre}
@@ -1525,7 +1645,7 @@ function App() {
                   />
                 </label>
                 <label className="field">
-                  <span>Email</span>
+                  <span>{t('auth.email')}</span>
                   <input
                     className="input"
                     type="email"
@@ -1536,7 +1656,7 @@ function App() {
                   />
                 </label>
                 <label className="field">
-                  <span>Password</span>
+                  <span>{t('auth.password')}</span>
                   <input
                     className="input"
                     type="password"
@@ -1547,7 +1667,7 @@ function App() {
                   />
                 </label>
                 <label className="field">
-                  <span>Rol</span>
+                  <span>{t('auth.role')}</span>
                   <select
                     className="select"
                     value={registerForm.rol}
@@ -1558,13 +1678,13 @@ function App() {
                       }))
                     }
                   >
-                    <option value="REGISTRADOR">Registrador</option>
-                    <option value="APROBADOR">Aprobador</option>
-                    <option value="ADMIN">Admin</option>
+                    <option value="REGISTRADOR">{t('auth.roles.REGISTRADOR')}</option>
+                    <option value="APROBADOR">{t('auth.roles.APROBADOR')}</option>
+                    <option value="ADMIN">{t('auth.roles.ADMIN')}</option>
                   </select>
                 </label>
                 <button className="sync-btn" type="submit" disabled={isBusy}>
-                  {isBusy ? 'Creando...' : 'Crear cuenta'}
+                  {isBusy ? t('auth.registerBusy') : t('auth.registerAction')}
                 </button>
                 <ActionFeedback
                   message={actionFeedback?.target === 'register' ? actionFeedback.message : null}
@@ -1582,19 +1702,20 @@ function App() {
     <main className="container">
       <img className="dashboard-logo-corner" src="/logo1.jpeg" alt="Elatilo" />
       <a className="skip-link" href="#main-panel">
-        Ir al panel
+        {t('app.skipToPanel')}
       </a>
 
       <header>
         <div className="header-top">
           <div>
-            <h1>Estrutec Gastos</h1>
+            <h1>{t('app.title')}</h1>
             <p className="dashboard-location-label">{currentDashboardLabel}</p>
-            <p className="muted">
-              Conecta FastAPI, autentica usuarios y registra gastos desde un solo panel.
-            </p>
+            <p className="muted">{t('app.subtitle')}</p>
           </div>
           <div className="sync-wrap">
+            <button className="theme-btn" type="button" onClick={toggleLanguage}>
+              {t('language.switchTo')}
+            </button>
             <button
               className="theme-btn"
               type="button"
@@ -1608,7 +1729,7 @@ function App() {
               onClick={() => refreshDashboard()}
               disabled={!token || isBusy}
             >
-              Sincronizar
+              {t('menu.sync')}
             </button>
             <div className={`sync-loader ${isBusy ? 'active' : ''}`} aria-hidden="true">
               <span className="loader-dot" />
@@ -1617,22 +1738,31 @@ function App() {
             </div>
           </div>
         </div>
-        <p id="lastUpdate">Ultima actualizacion: {lastUpdate}</p>
+        <p id="lastUpdate">{t('app.lastUpdate')}: {lastUpdate}</p>
         <p className={`sync-status ${statusTone}`}>{statusMessage}</p>
       </header>
 
       <section className="card-group" id="main-panel">
         <div className="tabs-row">
           <div className="tabs">
-            {activeDashboard === 'budgets' ? <span className="badge dashboard-alias">dashboard1</span> : null}
+            <button
+              className={`tab-btn dashboard-home-btn ${activeDashboard === 'home' ? 'active' : ''}`}
+              type="button"
+              onClick={openHomeDashboard}
+            >
+              <span className="button-with-icon">
+                <HiOutlineChartBar aria-hidden="true" />
+                <span>{t('menu.dashboard')}</span>
+              </span>
+            </button>
             <button
               className={`tab-btn ${activeDashboard === 'budgets' || activeDashboard === 'budget-detail' ? 'active' : ''}`}
               type="button"
-              onClick={() => setActiveDashboard('budgets')}
+              onClick={openProjectsDashboard}
             >
               <span className="button-with-icon">
-                <PiPiggyBankBold aria-hidden="true" />
-                <span>Presupuestos</span>
+                <IoBusinessOutline aria-hidden="true" />
+                <span>{t('menu.projects')}</span>
               </span>
             </button>
             <button
@@ -1642,7 +1772,7 @@ function App() {
             >
               <span className="button-with-icon">
                 <HiOutlineUsers aria-hidden="true" />
-                <span>Usuarios</span>
+                <span>{t('menu.users')}</span>
               </span>
             </button>
             <button
@@ -1650,13 +1780,26 @@ function App() {
               type="button"
               onClick={() => setActiveDashboard('icons')}
             >
-              Iconos
+              <span className="button-with-icon">
+                <HiOutlineFolderOpen aria-hidden="true" />
+                <span>{t('menu.icons')}</span>
+              </span>
+            </button>
+            <button
+              className={`tab-btn ${activeDashboard === 'accounts' ? 'active' : ''}`}
+              type="button"
+              onClick={openAccountsDashboard}
+            >
+              <span className="button-with-icon">
+                <MdOutlinePayments aria-hidden="true" />
+                <span>{t('menu.accounts')}</span>
+              </span>
             </button>
           </div>
           <div className="action-row">
             {activeDashboard === 'budget-detail' ? (
               <button className="tab-btn sort-order-btn" type="button" onClick={returnToBudgetsDashboard}>
-                Volver a presupuestos
+                {t('menu.backToBudgets')}
               </button>
             ) : null}
             <span className="badge role">
@@ -1667,7 +1810,7 @@ function App() {
             </span>
             <div className="action-column">
               <button className="tab-btn sort-order-btn" type="button" onClick={handleLogout}>
-                Cerrar sesion
+                {t('menu.logout')}
               </button>
               <ActionFeedback
                 message={actionFeedback?.target === 'logout' ? actionFeedback.message : null}
@@ -1677,7 +1820,7 @@ function App() {
           </div>
         </div>
 
-        {activeDashboard === 'budgets' || activeDashboard === 'budget-detail' ? null : (
+        {activeDashboard === 'home' || activeDashboard === 'budgets' || activeDashboard === 'budget-detail' || activeDashboard === 'accounts' ? null : (
           <div className={`health-layout ${activeDashboard === 'budget-detail' ? 'detail-health-layout' : ''}`}>
             <article className={`health-card ${activeDashboard === 'budget-detail' ? 'detail-active-card' : ''}`}>
               <h3>
@@ -1710,7 +1853,12 @@ function App() {
                 </>
               ) : (
                 <>
-                  <p className="health-row">{selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}</p>
+                  <p className="health-row">
+                    Nombre del presupuesto:{' '}
+                    <span className="budget-name-highlight">
+                      {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
+                    </span>
+                  </p>
                   <p className="health-meta">
                     Disponible:{' '}
                     {selectedBudgetDetails
@@ -1730,11 +1878,11 @@ function App() {
                     </div>
                     <div className="budget-bar-track" aria-hidden="true">
                       <div
-                        className="budget-bar-fill budget-bar-consumed"
+                        className={`budget-bar-fill ${selectedBudgetIsClosed ? 'budget-bar-closed' : 'budget-bar-consumed'}`}
                         style={{ width: `${Math.min(selectedBudgetConsumedPercent, 100)}%` }}
                       />
                       <div
-                        className="budget-bar-fill budget-bar-available"
+                        className={`budget-bar-fill ${selectedBudgetIsClosed ? 'budget-bar-closed' : 'budget-bar-available'}`}
                         style={{ width: `${Math.min(selectedBudgetAvailablePercent, 100)}%` }}
                       />
                     </div>
@@ -1788,8 +1936,13 @@ function App() {
 
       {activeDashboard === 'budget-detail' ? (
         <article className="card-group detail-summary-card">
-          <h2>Presupuesto activo</h2>
-          <p className="health-row">{selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}</p>
+          <h2>Resumen Presupuesto</h2>
+          <p className="health-row">
+            Nombre del presupuesto:{' '}
+            <span className="budget-name-highlight">
+              {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
+            </span>
+          </p>
           <p className="health-meta">
             Disponible:{' '}
             {selectedBudgetDetails
@@ -1808,12 +1961,12 @@ function App() {
               <span>Disponible {selectedBudgetAvailablePercent.toFixed(1)}%</span>
             </div>
             <div className="budget-bar-track" aria-hidden="true">
-              <div
-                className="budget-bar-fill budget-bar-consumed"
+               <div
+                className={`budget-bar-fill ${selectedBudgetIsClosed ? 'budget-bar-closed' : 'budget-bar-consumed'}`}
                 style={{ width: `${Math.min(selectedBudgetConsumedPercent, 100)}%` }}
               />
               <div
-                className="budget-bar-fill budget-bar-available"
+                className={`budget-bar-fill ${selectedBudgetIsClosed ? 'budget-bar-closed' : 'budget-bar-available'}`}
                 style={{ width: `${Math.min(selectedBudgetAvailablePercent, 100)}%` }}
               />
             </div>
@@ -1823,7 +1976,103 @@ function App() {
 
       <section className="dashboard-layout">
         <div id="dashboard-content">
-          {activeDashboard === 'users' ? (
+          {activeDashboard === 'home' ? (
+            <section className="panel-stack">
+              <div className="status-grid dashboard-summary-grid">
+                <article className="card dashboard-summary-card summary-projects">
+                  <div className="dashboard-summary-head">
+                    <div className="dashboard-summary-icon">
+                      <IoBusinessOutline aria-hidden="true" />
+                    </div>
+                    <div className="dashboard-summary-copy">
+                      <p className="dashboard-summary-label">{t('summary.activeProjects')}</p>
+                      <p className="big">{activeProjects.length}</p>
+                    </div>
+                  </div>
+                  <p className="dashboard-summary-meta">{t('summary.activeProjectsMeta')}</p>
+                </article>
+
+                <article className="card dashboard-summary-card summary-budgets">
+                  <div className="dashboard-summary-head">
+                    <div className="dashboard-summary-icon">
+                      <MdOutlinePayments aria-hidden="true" />
+                    </div>
+                    <div className="dashboard-summary-copy">
+                      <p className="dashboard-summary-label">{t('summary.activeBudgets')}</p>
+                      <p className="big">{activeBudgets.length}</p>
+                    </div>
+                  </div>
+                  <p className="dashboard-summary-meta">{activeBudgetsTotalLabel}</p>
+                </article>
+
+                <article className="card dashboard-summary-card summary-receipts">
+                  <div className="dashboard-summary-head">
+                    <div className="dashboard-summary-icon">
+                      <HiOutlineDocumentText aria-hidden="true" />
+                    </div>
+                    <div className="dashboard-summary-copy">
+                      <p className="dashboard-summary-label">{t('summary.receipts')}</p>
+                      <p className="big">{nonRejectedReceipts.length}</p>
+                    </div>
+                  </div>
+                  <p className="dashboard-summary-meta">{receiptsTotalLabel}</p>
+                </article>
+
+                <article className="card dashboard-summary-card summary-cashbox">
+                  <div className="dashboard-summary-head">
+                    <div className="dashboard-summary-icon">
+                      <HiOutlineChartBar aria-hidden="true" />
+                    </div>
+                    <div className="dashboard-summary-copy">
+                      <p className="dashboard-summary-label">{t('summary.cashboxReceipts')}</p>
+                      <p className="big">{cashboxReceipts.length}</p>
+                    </div>
+                  </div>
+                  <p className="dashboard-summary-meta">{cashboxTotalLabel}</p>
+                </article>
+              </div>
+            </section>
+          ) : activeDashboard === 'accounts' ? (
+            <section className="panel-stack">
+              <aside className="transfer-panel glass-panel" aria-label="Informacion para transferencia local">
+                <div className="transfer-panel-header">
+                  <span className="badge transfer-badge">{t('transfer.badge')}</span>
+                  <h2>{localTransferDetails.title}</h2>
+                </div>
+
+                <div className="transfer-panel-body">
+                  <div className="transfer-info-list">
+                    <p><strong>{t('transfer.client')}:</strong> {localTransferDetails.clientName}</p>
+                    <p><strong>{t('transfer.idNumber')}:</strong> {localTransferDetails.idNumber}</p>
+                    <p><strong>{t('transfer.address')}:</strong> {localTransferDetails.address}</p>
+                    <p><strong>{t('transfer.phone')}:</strong> {localTransferDetails.phone}</p>
+                    <p><strong>{t('transfer.email')}:</strong> {localTransferDetails.email}</p>
+                  </div>
+
+                  <div className="transfer-account-list">
+                    <p className="transfer-section-label">{t('transfer.iban')}</p>
+                    {localTransferDetails.accounts.map((account) => (
+                      <article className="transfer-account-card" key={account.iban}>
+                        <p className="transfer-bank-name">{account.bank}</p>
+                        <p className="transfer-iban">{account.iban}</p>
+                      </article>
+                    ))}
+                  </div>
+
+                  <div className="transfer-account-list">
+                    <p className="transfer-section-label">{localTransferDetails.bcrAccount.title}</p>
+                    <article className="transfer-account-card">
+                      <p className="transfer-bank-name">{localTransferDetails.bcrAccount.holderName}</p>
+                      <p className="transfer-iban">{localTransferDetails.bcrAccount.iban}</p>
+                      <p className="transfer-account-meta">{localTransferDetails.bcrAccount.idNumber}</p>
+                      <p className="transfer-account-meta">{localTransferDetails.bcrAccount.accountType}</p>
+                      <p className="transfer-account-meta">{localTransferDetails.bcrAccount.currency}</p>
+                    </article>
+                  </div>
+                </div>
+              </aside>
+            </section>
+          ) : activeDashboard === 'users' ? (
             <UsersDashboard
               users={users}
               selectedUserId={selectedUserId}
@@ -1864,19 +2113,26 @@ function App() {
                   onOpenBudgets={openProjectBudgetsSection}
                 />
               ) : (
-                <ProjectBudgetsDashboard
-                  projects={projects}
-                  budgets={budgets}
-                  budgetForm={budgetForm}
-                  selectedProjectId={selectedProjectId}
-                  selectedBudgetId={selectedBudgetId}
-                  isBusy={!token || isBusy}
-                  actionFeedback={actionFeedback}
-                  onBudgetFormChange={(patch) => setBudgetForm((current) => ({ ...current, ...patch }))}
-                  onCreateBudget={handleBudgetCreate}
-                  onOpenBudget={openBudgetDashboard}
-                  onBackToProjects={returnToProjectsSection}
-                  formatMoney={formatMoney}
+              <ProjectBudgetsDashboard
+                projects={projects}
+                budgets={budgets}
+                budgetForm={budgetForm}
+                budgetMaintenanceForm={budgetMaintenanceForm}
+                selectedProjectId={selectedProjectId}
+                selectedBudgetId={selectedBudgetId}
+                selectedBudget={selectedBudgetDetails}
+                isBusy={!token || isBusy}
+                actionFeedback={actionFeedback}
+                onBudgetFormChange={(patch) => setBudgetForm((current) => ({ ...current, ...patch }))}
+                onBudgetMaintenanceFormChange={(patch) =>
+                  setBudgetMaintenanceForm((current) => ({ ...current, ...patch }))
+                }
+                onCreateBudget={handleBudgetCreate}
+                onSelectBudget={setSelectedBudgetId}
+                onUpdateBudget={handleBudgetUpdate}
+                onOpenBudget={openBudgetDashboard}
+                onBackToProjects={returnToProjectsSection}
+                formatMoney={formatMoney}
                 />
               )}
             </div>
@@ -2074,6 +2330,133 @@ function App() {
 
           <article className="card-group">
             <div className="section-title">
+              <h2>Adjuntos del comprobante seleccionado</h2>
+              <span className="list-meta">{attachments.length} archivos</span>
+            </div>
+            <div className="receipt-attachments-panel">
+              <form className="form-grid two-columns" onSubmit={handleAttachmentCreate}>
+                <label className="field">
+                  <span>Ruta o URL</span>
+                  <input
+                    className="input"
+                    value={attachmentForm.cdn_path}
+                    onChange={(event) =>
+                      setAttachmentForm((current) => ({ ...current, cdn_path: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Nombre</span>
+                  <input
+                    className="input"
+                    value={attachmentForm.nombre_archivo}
+                    onChange={(event) =>
+                      setAttachmentForm((current) => ({
+                        ...current,
+                        nombre_archivo: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Tipo</span>
+                  <input
+                    className="input"
+                    value={attachmentForm.tipo_archivo}
+                    onChange={(event) =>
+                      setAttachmentForm((current) => ({
+                        ...current,
+                        tipo_archivo: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Orden</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    value={attachmentForm.orden}
+                    onChange={(event) =>
+                      setAttachmentForm((current) => ({ ...current, orden: event.target.value }))
+                    }
+                  />
+                </label>
+                <div className="field">
+                  <span>&nbsp;</span>
+                  <div className="action-column">
+                    <div className="attachment-submit-wrap">
+                      <button
+                        className="sync-btn"
+                        type="submit"
+                        disabled={!selectedReceiptId || isBusy || isAttachmentBusy}
+                      >
+                        <span className="button-with-icon">
+                          <MdAttachFile aria-hidden="true" />
+                          <span>
+                            {isAttachmentBusy ? 'Registrando adjunto...' : 'Agregar adjunto'}
+                          </span>
+                        </span>
+                      </button>
+                      <div
+                        className={`sync-loader ${isAttachmentBusy ? 'active' : ''}`}
+                        aria-hidden="true"
+                      >
+                        <span className="loader-dot" />
+                        <span className="loader-dot" />
+                        <span className="loader-dot" />
+                      </div>
+                    </div>
+                    <ActionFeedback
+                      message={actionFeedback?.target === 'attachment-create' ? actionFeedback.message : null}
+                      tone={actionFeedback?.tone}
+                    />
+                  </div>
+                </div>
+              </form>
+              <div className="list-scroll compact-list">
+                {attachments.map((attachment) => (
+                  <article className="record-card" key={attachment.adjunto_id}>
+                    <div className="record-head">
+                      <div>
+                        <h3>{attachment.nombre_archivo ?? 'Adjunto sin nombre'}</h3>
+                        <p>{attachment.cdn_path}</p>
+                        <p className="list-meta">
+                          Comprobante:{' '}
+                          {selectedReceipt?.numero_factura ||
+                            selectedReceipt?.negocio ||
+                            selectedReceiptId}
+                        </p>
+                      </div>
+                      <button
+                        className="tab-btn"
+                        type="button"
+                        onClick={() => void handleAttachmentDelete(attachment.adjunto_id)}
+                        disabled={isBusy}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                    <ActionFeedback
+                      message={
+                        actionFeedback?.target === `attachment-delete-${attachment.adjunto_id}`
+                          ? actionFeedback.message
+                          : null
+                      }
+                      tone={actionFeedback?.tone}
+                    />
+                  </article>
+                ))}
+                {attachments.length === 0 ? (
+                  <p className="empty">Selecciona un comprobante para ver adjuntos.</p>
+                ) : null}
+              </div>
+            </div>
+          </article>
+
+          <article className="card-group">
+            <div className="section-title">
               <h2>Comprobantes</h2>
               <span className="list-meta">Aprobados, pendientes, rechazados y sus adjuntos</span>
             </div>
@@ -2098,163 +2481,13 @@ function App() {
                 rejectedBudgetReceipts,
                 'No hay comprobantes rechazados para este presupuesto.',
               )}
-
-              <div className="receipt-attachments-panel">
-                <div className="section-title">
-                  <h2>Adjuntos del comprobante seleccionado</h2>
-                  <span className="list-meta">{attachments.length} archivos</span>
-                </div>
-                <form className="form-grid two-columns" onSubmit={handleAttachmentCreate}>
-                  <label className="field">
-                    <span>Ruta o URL</span>
-                    <input
-                      className="input"
-                      value={attachmentForm.cdn_path}
-                      onChange={(event) =>
-                        setAttachmentForm((current) => ({ ...current, cdn_path: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Nombre</span>
-                    <input
-                      className="input"
-                      value={attachmentForm.nombre_archivo}
-                      onChange={(event) =>
-                        setAttachmentForm((current) => ({
-                          ...current,
-                          nombre_archivo: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Tipo</span>
-                    <input
-                      className="input"
-                      value={attachmentForm.tipo_archivo}
-                      onChange={(event) =>
-                        setAttachmentForm((current) => ({
-                          ...current,
-                          tipo_archivo: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Orden</span>
-                    <input
-                      className="input"
-                      type="number"
-                      min="1"
-                      value={attachmentForm.orden}
-                      onChange={(event) =>
-                        setAttachmentForm((current) => ({ ...current, orden: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <div className="field">
-                    <span>&nbsp;</span>
-                    <div className="action-column">
-                      <div className="attachment-submit-wrap">
-                        <button
-                          className="sync-btn"
-                          type="submit"
-                          disabled={!selectedReceiptId || isBusy || isAttachmentBusy}
-                        >
-                          <span className="button-with-icon">
-                            <MdAttachFile aria-hidden="true" />
-                            <span>
-                              {isAttachmentBusy ? 'Registrando adjunto...' : 'Agregar adjunto'}
-                            </span>
-                          </span>
-                        </button>
-                        <div
-                          className={`sync-loader ${isAttachmentBusy ? 'active' : ''}`}
-                          aria-hidden="true"
-                        >
-                          <span className="loader-dot" />
-                          <span className="loader-dot" />
-                          <span className="loader-dot" />
-                        </div>
-                      </div>
-                      <ActionFeedback
-                        message={actionFeedback?.target === 'attachment-create' ? actionFeedback.message : null}
-                        tone={actionFeedback?.tone}
-                      />
-                    </div>
-                  </div>
-                </form>
-                <div className="list-scroll compact-list">
-                  {attachments.map((attachment) => (
-                    <article className="record-card" key={attachment.adjunto_id}>
-                      <div className="record-head">
-                        <div>
-                          <h3>{attachment.nombre_archivo ?? 'Adjunto sin nombre'}</h3>
-                          <p>{attachment.cdn_path}</p>
-                          <p className="list-meta">
-                            Comprobante:{' '}
-                            {selectedReceipt?.numero_factura ||
-                              selectedReceipt?.negocio ||
-                              selectedReceiptId}
-                          </p>
-                        </div>
-                        <button
-                          className="tab-btn"
-                          type="button"
-                          onClick={() => void handleAttachmentDelete(attachment.adjunto_id)}
-                          disabled={isBusy}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                      <ActionFeedback
-                        message={
-                          actionFeedback?.target === `attachment-delete-${attachment.adjunto_id}`
-                            ? actionFeedback.message
-                            : null
-                        }
-                        tone={actionFeedback?.tone}
-                      />
-                    </article>
-                  ))}
-                  {attachments.length === 0 ? (
-                    <p className="empty">Selecciona un comprobante para ver adjuntos.</p>
-                  ) : null}
-                </div>
-              </div>
             </div>
           </article>
+
             </section>
           )}
         </div>
 
-        <aside className="transfer-panel glass-panel" aria-label="Informacion para transferencia local">
-          <div className="transfer-panel-header">
-            <span className="badge transfer-badge">Transferencia local</span>
-            <h2>{localTransferDetails.title}</h2>
-          </div>
-
-          <div className="transfer-panel-body">
-            <div className="transfer-info-list">
-              <p><strong>Cliente:</strong> {localTransferDetails.clientName}</p>
-              <p><strong>Cedula:</strong> {localTransferDetails.idNumber}</p>
-              <p><strong>Direccion:</strong> {localTransferDetails.address}</p>
-              <p><strong>Telefono:</strong> {localTransferDetails.phone}</p>
-              <p><strong>Email:</strong> {localTransferDetails.email}</p>
-            </div>
-
-            <div className="transfer-account-list">
-              <p className="transfer-section-label">Numero de cuenta IBAN</p>
-              {localTransferDetails.accounts.map((account) => (
-                <article className="transfer-account-card" key={account.iban}>
-                  <p className="transfer-bank-name">{account.bank}</p>
-                  <p className="transfer-iban">{account.iban}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </aside>
       </section>
 
       <footer className="site-footer">

@@ -422,6 +422,83 @@ header h1 {
   border-color: #475569;
 }
 
+.dashboard-summary-grid {
+  margin-top: 0;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.dashboard-summary-card {
+  display: grid;
+  gap: 18px;
+  min-height: 156px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent),
+    rgba(30, 41, 59, 0.88);
+}
+
+.dashboard-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dashboard-summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.dashboard-summary-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.dashboard-summary-copy {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  text-align: right;
+}
+
+.dashboard-summary-label,
+.dashboard-summary-meta {
+  margin: 0;
+}
+
+.dashboard-summary-label {
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+.dashboard-summary-meta {
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  font-size: 0.94rem;
+}
+
+.summary-projects .dashboard-summary-icon {
+  color: #fb923c;
+}
+
+.summary-budgets .dashboard-summary-icon {
+  color: #a3e635;
+}
+
+.summary-receipts .dashboard-summary-icon {
+  color: #fb7185;
+}
+
+.summary-cashbox .dashboard-summary-icon {
+  color: #60a5fa;
+}
+
 .big {
   font-size: 1.9rem;
   font-weight: 800;
@@ -465,12 +542,45 @@ h2 {
   padding: 7px 11px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+.tab-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #60a5fa;
+  background: #172554;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(30, 64, 175, 0.22);
 }
 
 .tab-btn.active {
   background: #1d4ed8;
   color: #ffffff;
   border-color: #1d4ed8;
+}
+
+.dashboard-home-btn {
+  background: rgba(249, 115, 22, 0.22);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+.dashboard-home-btn:hover:not(:disabled) {
+  border-color: #fb923c;
+  background: rgba(249, 115, 22, 0.38);
+  color: #fff7ed;
+  box-shadow: 0 10px 22px rgba(249, 115, 22, 0.28);
+}
+
+.dashboard-home-btn.active {
+  background: #f97316;
+  color: #ffffff;
+  border-color: #f97316;
 }
 
 .tab-btn:focus-visible {
@@ -596,6 +706,11 @@ h2 {
 .health-row {
   margin: 8px 0;
   color: #cbd5e1;
+}
+
+.budget-name-highlight {
+  color: #4ade80;
+  font-weight: 800;
 }
 
 .health-badge {
@@ -745,7 +860,7 @@ h2 {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -864,6 +979,13 @@ h2 {
   font-weight: 700;
   line-height: 1.5;
   word-break: break-all;
+}
+
+.transfer-account-meta {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .list-scroll {
@@ -1040,6 +1162,10 @@ h2 {
 .budget-bar-available {
   right: 0;
   background: linear-gradient(90deg, #22c55e, #86efac);
+}
+
+.budget-bar-closed {
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
 }
 
 .badge {
@@ -1257,6 +1383,26 @@ body.light-theme .sync-status {
   color: #1d4ed8;
 }
 
+body.light-theme .dashboard-summary-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.74)),
+    rgba(255, 255, 255, 0.82);
+}
+
+body.light-theme .dashboard-summary-icon {
+  background: rgba(248, 250, 252, 0.92);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+body.light-theme .dashboard-summary-label {
+  color: #64748b;
+}
+
+body.light-theme .dashboard-summary-meta {
+  color: #334155;
+  border-top-color: rgba(148, 163, 184, 0.24);
+}
+
 body.light-theme .transfer-panel {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(226, 232, 240, 0.58)),
@@ -1279,6 +1425,10 @@ body.light-theme .transfer-bank-name {
 body.light-theme .transfer-info-list strong,
 body.light-theme .transfer-iban {
   color: #0f172a;
+}
+
+body.light-theme .transfer-account-meta {
+  color: #334155;
 }
 
 body.light-theme .transfer-account-card {
