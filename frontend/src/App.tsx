@@ -2042,7 +2042,7 @@ function App() {
           <div className="login-card">
             <div className="header-top">
               <div>
-                <h2>{authMode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h2>
+                <h2>{t('auth.loginTitle')}</h2>
                 <p className="muted">{t('auth.connectApi')}</p>
               </div>
               <div className="sync-wrap">
@@ -2059,115 +2059,37 @@ function App() {
               </div>
             </div>
 
-            <div className="tabs">
-              <button
-                className={`tab-btn ${authMode === 'login' ? 'active' : ''}`}
-                type="button"
-                onClick={() => setAuthMode('login')}
-              >
-                {t('auth.loginTab')}
-              </button>
-              <button
-                className={`tab-btn ${authMode === 'register' ? 'active' : ''}`}
-                type="button"
-                onClick={() => setAuthMode('register')}
-              >
-                {t('auth.registerTab')}
-              </button>
-            </div>
-
-            {authMode === 'login' ? (
-              <form className="auth-form" onSubmit={handleLogin}>
-                <label className="field">
-                  <span>{t('auth.email')}</span>
-                  <input
-                    className="input"
-                    type="email"
-                    value={loginForm.email}
-                    onChange={(event) =>
-                      setLoginForm((current) => ({ ...current, email: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t('auth.password')}</span>
-                  <input
-                    className="input"
-                    type="password"
-                    value={loginForm.password}
-                    onChange={(event) =>
-                      setLoginForm((current) => ({ ...current, password: event.target.value }))
-                    }
-                  />
-                </label>
-                <button className="sync-btn" type="submit" disabled={isBusy}>
-                  {isBusy ? t('auth.loginBusy') : t('auth.loginAction')}
-                </button>
-                <ActionFeedback
-                  message={actionFeedback?.target === 'login' ? actionFeedback.message : null}
-                  tone={actionFeedback?.tone}
+            <form className="auth-form" onSubmit={handleLogin}>
+              <label className="field">
+                <span>{t('auth.email')}</span>
+                <input
+                  className="input"
+                  type="email"
+                  value={loginForm.email}
+                  onChange={(event) =>
+                    setLoginForm((current) => ({ ...current, email: event.target.value }))
+                  }
                 />
-              </form>
-            ) : (
-              <form className="auth-form" onSubmit={handleRegister}>
-                <label className="field">
-                  <span>{t('auth.name')}</span>
-                  <input
-                    className="input"
-                    value={registerForm.nombre}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({ ...current, nombre: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t('auth.email')}</span>
-                  <input
-                    className="input"
-                    type="email"
-                    value={registerForm.email}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({ ...current, email: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t('auth.password')}</span>
-                  <input
-                    className="input"
-                    type="password"
-                    value={registerForm.password}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({ ...current, password: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>{t('auth.role')}</span>
-                  <select
-                    className="select"
-                    value={registerForm.rol}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({
-                        ...current,
-                        rol: event.target.value as Role,
-                      }))
-                    }
-                  >
-                    <option value="REGISTRADOR">{t('auth.roles.REGISTRADOR')}</option>
-                    <option value="APROBADOR">{t('auth.roles.APROBADOR')}</option>
-                    <option value="ADMIN">{t('auth.roles.ADMIN')}</option>
-                  </select>
-                </label>
-                <button className="sync-btn" type="submit" disabled={isBusy}>
-                  {isBusy ? t('auth.registerBusy') : t('auth.registerAction')}
-                </button>
-                <ActionFeedback
-                  message={actionFeedback?.target === 'register' ? actionFeedback.message : null}
-                  tone={actionFeedback?.tone}
+              </label>
+              <label className="field">
+                <span>{t('auth.password')}</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={loginForm.password}
+                  onChange={(event) =>
+                    setLoginForm((current) => ({ ...current, password: event.target.value }))
+                  }
                 />
-              </form>
-            )}
+              </label>
+              <button className="sync-btn" type="submit" disabled={isBusy}>
+                {isBusy ? t('auth.loginBusy') : t('auth.loginAction')}
+              </button>
+              <ActionFeedback
+                message={actionFeedback?.target === 'login' ? actionFeedback.message : null}
+                tone={actionFeedback?.tone}
+              />
+            </form>
           </div>
         </section>
       </main>
