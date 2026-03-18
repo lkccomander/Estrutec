@@ -8,7 +8,7 @@ import {
   HiOutlineUsers,
 } from 'react-icons/hi2'
 import { IoBusinessOutline } from 'react-icons/io5'
-import { MdAttachFile, MdOutlineFileDownload, MdOutlinePayments } from 'react-icons/md'
+import { MdAttachFile, MdContentCopy, MdOutlineFileDownload, MdOutlinePayments } from 'react-icons/md'
 import './App.css'
 import { ActionFeedback } from './components/ActionFeedback'
 import { useI18n } from './i18n'
@@ -90,6 +90,8 @@ type Receipt = {
   observacion?: string | null
   balance?: string | null
   applied_at?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 type Movement = {
@@ -158,6 +160,49 @@ function formatGroupedMoney(entries: Array<{ amount: string; currency: Currency 
     .filter(([, total]) => total > 0)
     .map(([currency, total]) => formatMoney(total.toFixed(2), currency))
     .join(' | ')
+}
+
+function formatNumberMask(value: number) {
+  return value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+function buildLinePath(points: Array<{ x: number; y: number }>) {
+  if (!points.length) {
+    return ''
+  }
+
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+}
+
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  }
+}
+
+function describeDonutArc(
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const startOuter = polarToCartesian(centerX, centerY, outerRadius, endAngle)
+  const endOuter = polarToCartesian(centerX, centerY, outerRadius, startAngle)
+  const startInner = polarToCartesian(centerX, centerY, innerRadius, endAngle)
+  const endInner = polarToCartesian(centerX, centerY, innerRadius, startAngle)
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1'
+
+  return [
+    `M ${startOuter.x} ${startOuter.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${endOuter.x} ${endOuter.y}`,
+    `L ${endInner.x} ${endInner.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${startInner.x} ${startInner.y}`,
+    'Z',
+  ].join(' ')
 }
 
 function getStatusTone(message: string) {
@@ -258,6 +303,7 @@ function App() {
   const [selectedBudgetId, setSelectedBudgetId] = useState('')
   const [selectedReceiptId, setSelectedReceiptId] = useState('')
   const [selectedUserId, setSelectedUserId] = useState('')
+  const [projectHistoryOffset, setProjectHistoryOffset] = useState(0)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [statusMessage, setStatusMessage] = useState(
     'Conecta el frontend con tu API local y empieza a registrar gastos.',
@@ -340,8 +386,14 @@ function App() {
   })
   const activeProjects = projects.filter((project) => project.activo)
   const activeBudgets = budgets.filter((budget) => budget.estado === 'ACTIVO')
-  const nonRejectedReceipts = receipts.filter((receipt) => receipt.estado !== 'RECHAZADO')
-  const cashboxReceipts = nonRejectedReceipts.filter((receipt) => receipt.tipo_comprobante === 'CAJA_CHICA')
+  const activeBudgetIds = new Set(activeBudgets.map((budget) => budget.presupuesto_id))
+  const nonRejectedReceipts = receipts.filter(
+    (receipt) =>
+      receipt.estado !== 'RECHAZADO' && activeBudgetIds.has(receipt.presupuesto_id),
+  )
+  const cashboxReceipts = nonRejectedReceipts.filter(
+    (receipt) => receipt.tipo_comprobante === 'CAJA_CHICA',
+  )
   const activeBudgetsTotalLabel =
     formatGroupedMoney(activeBudgets.map((budget) => ({ amount: budget.monto_total, currency: budget.moneda }))) ||
     'Sin montos'
@@ -351,6 +403,93 @@ function App() {
   const cashboxTotalLabel =
     formatGroupedMoney(cashboxReceipts.map((receipt) => ({ amount: receipt.monto_gasto, currency: receipt.moneda }))) ||
     'Sin montos'
+  const projectHistorySeries = activeProjects
+    .map((project) => {
+      const projectBudgets = activeBudgets.filter((budget) => budget.proyecto_id === project.proyecto_id)
+      const projectCurrencies = Array.from(new Set(projectBudgets.map((budget) => budget.moneda)))
+      const canAggregateMoney = projectCurrencies.length === 1
+      const projectReceipts = nonRejectedReceipts.filter((receipt) =>
+        projectBudgets.some((budget) => budget.presupuesto_id === receipt.presupuesto_id),
+      )
+      const approvedProjectReceipts = projectReceipts
+        .filter((receipt) => receipt.estado === 'APROBADO')
+        .sort((left, right) => compareReceiptsByDateDesc(right, left))
+      const expenseHistory = approvedProjectReceipts
+        .filter((receipt) => receipt.tipo_comprobante !== 'CAJA_CHICA')
+      const total = canAggregateMoney
+        ? projectBudgets.reduce((sum, budget) => sum + Number(budget.monto_total), 0)
+        : 0
+      const available = canAggregateMoney
+        ? projectBudgets.reduce((sum, budget) => sum + Number(budget.saldo_disponible), 0)
+        : 0
+      const totalCashbox = approvedProjectReceipts
+        .filter((receipt) => receipt.tipo_comprobante === 'CAJA_CHICA')
+        .reduce((sum, receipt) => sum + Number(receipt.monto_presupuesto ?? 0), 0)
+      const initialBalance = Math.max(total - totalCashbox, 0)
+      let runningBalance = initialBalance
+      const history = approvedProjectReceipts.map((receipt) => {
+        const amount = Number(receipt.monto_presupuesto ?? 0)
+        runningBalance =
+          receipt.tipo_comprobante === 'CAJA_CHICA'
+            ? runningBalance + amount
+            : runningBalance - amount
+
+        return {
+          date: receipt.fecha,
+          balance: runningBalance,
+        }
+      })
+
+      return {
+        projectId: project.proyecto_id,
+        name: project.nombre_proyecto,
+        initialBalance,
+        total,
+        available,
+        receiptsCount: projectReceipts.length,
+        budgetCount: projectBudgets.length,
+        currency: projectCurrencies[0] ?? 'CRC',
+        canAggregateMoney,
+        expenseHistory,
+        history,
+      }
+    })
+    .filter((project) => project.budgetCount > 0)
+    .sort((left, right) => right.total - left.total)
+  const chartEligibleProjects = projectHistorySeries.filter(
+    (project) => project.canAggregateMoney && project.currency === 'CRC',
+  )
+  const excludedProjectCount = projectHistorySeries.length - chartEligibleProjects.length
+  const projectHistoryPageSize = 5
+  const maxProjectHistoryOffset = Math.max(chartEligibleProjects.length - projectHistoryPageSize, 0)
+  const projectHistoryChartData = chartEligibleProjects.slice(
+    projectHistoryOffset,
+    projectHistoryOffset + projectHistoryPageSize,
+  )
+  const projectDonutColors = ['#22c55e', '#f97316', '#38bdf8', '#f43f5e', '#fbbf24', '#a855f7', '#14b8a6']
+  const projectDonutData = activeProjects
+    .map((project, index) => ({
+      projectId: project.proyecto_id,
+      name: project.nombre_proyecto,
+      total: Number(project.presupuesto_proyecto),
+      color: projectDonutColors[index % projectDonutColors.length],
+    }))
+    .filter((project) => project.total > 0)
+    .sort((left, right) => right.total - left.total)
+  const projectDonutTotal = projectDonutData.reduce((sum, project) => sum + project.total, 0)
+  let donutRunningAngle = 0
+  const projectDonutSegments = projectDonutData.map((project) => {
+    const angle = projectDonutTotal > 0 ? (project.total / projectDonutTotal) * 360 : 0
+    const startAngle = donutRunningAngle
+    const endAngle = donutRunningAngle + angle
+    donutRunningAngle = endAngle
+
+    return {
+      ...project,
+      percent: projectDonutTotal > 0 ? (project.total / projectDonutTotal) * 100 : 0,
+      path: describeDonutArc(132, 132, 104, 60, startAngle, endAngle),
+    }
+  })
   const localTransferDetails = {
     title: t('transfer.title'),
     clientName: 'EDWIN FERNANDO PEREZ ALVARADO',
@@ -412,6 +551,48 @@ function App() {
         ).toFixed(2)
       : null
 
+  function compareReceiptsByDateDesc(left: Receipt, right: Receipt) {
+    const leftTime = new Date(left.fecha).getTime()
+    const rightTime = new Date(right.fecha).getTime()
+
+    if (!Number.isNaN(leftTime) && !Number.isNaN(rightTime) && leftTime !== rightTime) {
+      return rightTime - leftTime
+    }
+
+    const leftAppliedTime = left.applied_at ? new Date(left.applied_at).getTime() : Number.NaN
+    const rightAppliedTime = right.applied_at ? new Date(right.applied_at).getTime() : Number.NaN
+
+    if (!Number.isNaN(leftAppliedTime) && !Number.isNaN(rightAppliedTime) && leftAppliedTime !== rightAppliedTime) {
+      return rightAppliedTime - leftAppliedTime
+    }
+
+    const leftCreatedTime = left.created_at ? new Date(left.created_at).getTime() : Number.NaN
+    const rightCreatedTime = right.created_at ? new Date(right.created_at).getTime() : Number.NaN
+
+    if (!Number.isNaN(leftCreatedTime) && !Number.isNaN(rightCreatedTime) && leftCreatedTime !== rightCreatedTime) {
+      return rightCreatedTime - leftCreatedTime
+    }
+
+    if (left.fecha !== right.fecha) {
+      return right.fecha.localeCompare(left.fecha)
+    }
+
+    return right.comprobante_id.localeCompare(left.comprobante_id)
+  }
+
+  function sanitizeDecimalInput(value: string) {
+    const normalized = value.replace(',', '.').replace(/[^0-9.]/g, '')
+    const [integerPart = '', ...decimalParts] = normalized.split('.')
+
+    if (decimalParts.length === 0) {
+      return integerPart
+    }
+
+    return `${integerPart}.${decimalParts.join('')}`
+  }
+
+  const receiptNeedsIssuerData = receiptForm.tipo_comprobante !== 'CAJA_CHICA'
+
   async function loadPublicHealth() {
     const [appHealth, databaseHealth] = await Promise.all([
       request<Health>('/health'),
@@ -448,9 +629,9 @@ function App() {
         projectList[0]?.proyecto_id ||
         ''
       const nextBudgetId = selectedBudgetId || budgetList[0]?.presupuesto_id || ''
-      const receiptsForBudget = receiptList.filter(
-        (receipt) => receipt.presupuesto_id === nextBudgetId,
-      )
+      const receiptsForBudget = receiptList
+        .filter((receipt) => receipt.presupuesto_id === nextBudgetId)
+        .sort(compareReceiptsByDateDesc)
       const nextReceiptId =
         receiptsForBudget.find((receipt) => receipt.comprobante_id === selectedReceiptId)
           ?.comprobante_id ??
@@ -587,6 +768,10 @@ function App() {
   }, [token, selectedReceiptId])
 
   useEffect(() => {
+    setProjectHistoryOffset((current) => Math.min(current, maxProjectHistoryOffset))
+  }, [maxProjectHistoryOffset])
+
+  useEffect(() => {
     if (!requiresExchangeRate && receiptForm.tipo_cambio) {
       setReceiptForm((current) => ({ ...current, tipo_cambio: '' }))
     }
@@ -644,16 +829,55 @@ function App() {
       receipt.estado.toLowerCase().includes(query)
     )
   })
-  const budgetReceipts = filteredReceipts.filter(
-    (receipt) => receipt.presupuesto_id === selectedBudgetId,
-  )
+  const budgetReceipts = filteredReceipts
+    .filter((receipt) => receipt.presupuesto_id === selectedBudgetId)
+    .sort(compareReceiptsByDateDesc)
   const approvedBudgetReceipts = budgetReceipts.filter((receipt) => receipt.estado === 'APROBADO')
   const pendingBudgetReceipts = budgetReceipts.filter((receipt) => receipt.estado === 'PENDIENTE')
   const rejectedBudgetReceipts = budgetReceipts.filter((receipt) => receipt.estado === 'RECHAZADO')
+  const selectedBudgetInitialBalance =
+    [...movements]
+      .sort((left, right) => {
+        const leftTime = new Date(left.created_at).getTime()
+        const rightTime = new Date(right.created_at).getTime()
+
+        if (leftTime !== rightTime) {
+          return leftTime - rightTime
+        }
+
+        return left.movimiento_id.localeCompare(right.movimiento_id)
+      })[0]?.saldo_anterior ?? selectedBudgetDetails?.monto_total ?? '0'
+  let selectedBudgetRunningBalance = Number(selectedBudgetInitialBalance)
+  const approvedReceiptsForBalance = [...approvedBudgetReceipts].sort(
+    (left, right) => compareReceiptsByDateDesc(right, left),
+  )
+  const receiptBalanceByDate = approvedReceiptsForBalance.reduce<Record<string, string>>(
+    (balances, receipt) => {
+      const amount = Number(receipt.monto_presupuesto ?? 0)
+
+      if (Number.isNaN(amount)) {
+        return balances
+      }
+
+      selectedBudgetRunningBalance =
+        receipt.tipo_comprobante === 'CAJA_CHICA'
+          ? selectedBudgetRunningBalance + amount
+          : selectedBudgetRunningBalance - amount
+
+      balances[receipt.comprobante_id] = selectedBudgetRunningBalance.toFixed(2)
+      return balances
+    },
+    {},
+  )
+  const selectedBudgetExpenseTotal = approvedBudgetReceipts
+    .filter((receipt) => receipt.tipo_comprobante !== 'CAJA_CHICA')
+    .reduce((total, receipt) => total + Number(receipt.monto_presupuesto ?? 0), 0)
 
   function openBudgetDashboard(budgetId: string) {
     const firstReceiptId =
-      receipts.find((receipt) => receipt.presupuesto_id === budgetId)?.comprobante_id ?? ''
+      receipts
+        .filter((receipt) => receipt.presupuesto_id === budgetId)
+        .sort(compareReceiptsByDateDesc)[0]?.comprobante_id ?? ''
     setSelectedBudgetId(budgetId)
     setSelectedReceiptId(firstReceiptId)
     setReceiptForm((current) => ({
@@ -767,8 +991,11 @@ function App() {
                       : 'excel-balance'
                   }
                 >
-                  {receipt.balance
-                    ? formatMoney(receipt.balance, selectedBudgetDetails?.moneda ?? receipt.moneda)
+                  {receiptBalanceByDate[receipt.comprobante_id]
+                    ? formatMoney(
+                        receiptBalanceByDate[receipt.comprobante_id],
+                        selectedBudgetDetails?.moneda ?? receipt.moneda,
+                      )
                     : 'Pendiente'}
                 </span>
                 <span>
@@ -1164,6 +1391,17 @@ function App() {
       return
     }
 
+    if (
+      receiptNeedsIssuerData &&
+      (!receiptForm.numero_factura.trim() || !receiptForm.negocio.trim() || !receiptForm.cedula.trim())
+    ) {
+      showActionFeedback(
+        'receipt-create',
+        'Factura, Negocio y Cedula son obligatorios cuando el comprobante no es Caja chica.',
+      )
+      return
+    }
+
     try {
       setIsBusy(true)
       const receipt = await request<Receipt>(
@@ -1180,6 +1418,7 @@ function App() {
       setSelectedReceiptId(receipt.comprobante_id)
       setReceiptForm((current) => ({
         ...current,
+        fecha: new Date().toISOString().slice(0, 10),
         negocio: '',
         descripcion: '',
         monto_gasto: '0.00',
@@ -1520,18 +1759,139 @@ function App() {
   const canApprove = currentUser?.rol === 'ADMIN' || currentUser?.rol === 'APROBADOR'
   const statusTone = getStatusTone(statusMessage)
   const selectedBudgetTotal = Number(selectedBudgetDetails?.monto_total ?? 0)
-  const selectedBudgetAvailable = Number(selectedBudgetDetails?.saldo_disponible ?? 0)
+  const selectedBudgetAvailable =
+    movements.length > 0
+      ? Number(
+          [...movements].sort((left, right) => {
+            const leftTime = new Date(left.created_at).getTime()
+            const rightTime = new Date(right.created_at).getTime()
+
+            if (leftTime !== rightTime) {
+              return rightTime - leftTime
+            }
+
+            return right.movimiento_id.localeCompare(left.movimiento_id)
+          })[0]?.saldo_nuevo ?? selectedBudgetDetails?.saldo_disponible ?? 0,
+        )
+      : approvedReceiptsForBalance.length > 0
+        ? Number(
+            receiptBalanceByDate[
+              approvedReceiptsForBalance[approvedReceiptsForBalance.length - 1].comprobante_id
+            ] ?? selectedBudgetDetails?.saldo_disponible ?? 0,
+          )
+        : Number(selectedBudgetDetails?.saldo_disponible ?? selectedBudgetInitialBalance)
   const selectedBudgetConsumed = Math.max(selectedBudgetTotal - selectedBudgetAvailable, 0)
   const selectedBudgetAvailablePercent =
     selectedBudgetTotal > 0 ? (selectedBudgetAvailable / selectedBudgetTotal) * 100 : 0
   const selectedBudgetConsumedPercent =
     selectedBudgetTotal > 0 ? (selectedBudgetConsumed / selectedBudgetTotal) * 100 : 0
   const selectedBudgetIsClosed = selectedBudgetDetails?.estado === 'CERRADO'
+  const projectHistoryChartWidth = 880
+  const projectHistoryChartHeight = 320
+  const projectHistoryChartPadding = { top: 18, right: 24, bottom: 44, left: 54 }
+  const projectHistoryChartInnerWidth =
+    projectHistoryChartWidth - projectHistoryChartPadding.left - projectHistoryChartPadding.right
+  const projectHistoryChartInnerHeight =
+    projectHistoryChartHeight - projectHistoryChartPadding.top - projectHistoryChartPadding.bottom
+  const projectHistoryColors = ['#22c55e', '#f97316', '#38bdf8', '#f43f5e', '#fbbf24']
+  const historyDateLabels = Array.from(
+    new Set(projectHistoryChartData.flatMap((project) => project.history.map((point) => point.date))),
+  ).sort((left, right) => left.localeCompare(right))
+  const projectHistoryDomain = historyDateLabels.length
+    ? historyDateLabels
+    : [new Date().toISOString().slice(0, 10)]
+  const projectHistoryMaxValue = Math.max(
+    ...projectHistoryChartData.flatMap((project) => [
+      project.initialBalance,
+      ...project.history.map((point) => point.balance),
+      ...project.expenseHistory.map((receipt) => Number(receipt.monto_presupuesto ?? 0)),
+    ]),
+    1,
+  )
+  const projectHistorySeriesPaths = projectHistoryChartData.map((project, projectIndex) => {
+    let currentBalance = project.initialBalance
+    const balanceByDate = new Map(project.history.map((point) => [point.date, point.balance]))
+    const points = projectHistoryDomain.map((date, index) => {
+      if (balanceByDate.has(date)) {
+        currentBalance = balanceByDate.get(date) ?? currentBalance
+      }
+
+      const x =
+        projectHistoryChartPadding.left +
+        (projectHistoryDomain.length === 1
+          ? projectHistoryChartInnerWidth / 2
+          : (projectHistoryChartInnerWidth / Math.max(projectHistoryDomain.length - 1, 1)) * index)
+      const y =
+        projectHistoryChartPadding.top +
+        projectHistoryChartInnerHeight -
+        (currentBalance / projectHistoryMaxValue) * projectHistoryChartInnerHeight
+
+      return { x, y, value: currentBalance, date }
+    })
+
+    return {
+      ...project,
+      color: projectHistoryColors[projectIndex % projectHistoryColors.length],
+      points,
+      path: buildLinePath(points),
+    }
+  })
+  const projectExpenseSeriesPaths = projectHistoryChartData.map((project, projectIndex) => {
+    let runningExpenses = 0
+    const groupedExpenses = project.expenseHistory.reduce<Record<string, number>>((accumulator, receipt) => {
+      accumulator[receipt.fecha] = (accumulator[receipt.fecha] ?? 0) + Number(receipt.monto_presupuesto ?? 0)
+      return accumulator
+    }, {})
+    const points = projectHistoryDomain.map((date, index) => {
+      if (groupedExpenses[date]) {
+        runningExpenses += groupedExpenses[date]
+      }
+
+      const x =
+        projectHistoryChartPadding.left +
+        (projectHistoryDomain.length === 1
+          ? projectHistoryChartInnerWidth / 2
+          : (projectHistoryChartInnerWidth / Math.max(projectHistoryDomain.length - 1, 1)) * index)
+      const y =
+        projectHistoryChartPadding.top +
+        projectHistoryChartInnerHeight -
+        (runningExpenses / projectHistoryMaxValue) * projectHistoryChartInnerHeight
+
+      return { x, y, value: runningExpenses, date }
+    })
+
+    return {
+      ...project,
+      color: projectHistoryColors[projectIndex % projectHistoryColors.length],
+      points,
+      path: buildLinePath(points),
+      totalExpenses: runningExpenses,
+    }
+  })
 
   function showActionFeedback(target: string, message: string) {
     const tone = getStatusTone(message)
     setStatusMessage(message)
     setActionFeedback({ target, message, tone })
+  }
+
+  async function handleCopyBudgetId() {
+    const budgetId = selectedBudgetDetails?.presupuesto_id
+
+    if (!budgetId) {
+      showActionFeedback('budget-id-copy', 'No hay ID de presupuesto para copiar.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(budgetId)
+      showActionFeedback('budget-id-copy', 'ID del presupuesto copiado.')
+    } catch (error) {
+      showActionFeedback(
+        'budget-id-copy',
+        error instanceof Error ? error.message : 'No se pudo copiar el ID del presupuesto.',
+      )
+    }
   }
 
   if (!isAuthenticated) {
@@ -1864,11 +2224,50 @@ function App() {
                       {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
                     </span>
                   </p>
+                  <p className="health-meta budget-id-row">
+                    ID del presupuesto:{' '}
+                    <span className="budget-id-highlight">
+                      {selectedBudgetDetails?.presupuesto_id ?? 'N/D'}
+                    </span>
+                    <button className="tab-btn budget-copy-btn" type="button" onClick={handleCopyBudgetId}>
+                      <span className="button-with-icon">
+                        <MdContentCopy aria-hidden="true" />
+                        <span>Copy</span>
+                      </span>
+                    </button>
+                  </p>
+                  <p className="health-meta">
+                    Saldo inicial:{' '}
+                    {selectedBudgetDetails
+                      ? formatMoney(
+                          Number(selectedBudgetInitialBalance).toFixed(2),
+                          selectedBudgetDetails.moneda,
+                        )
+                      : 'N/D'}
+                  </p>
+                  <p className="health-meta">
+                    Saldo total:{' '}
+                    {selectedBudgetDetails
+                      ? formatMoney(
+                          Number(selectedBudgetTotal).toFixed(2),
+                          selectedBudgetDetails.moneda,
+                        )
+                      : 'N/D'}
+                  </p>
+                  <p className="health-meta">
+                    Total de gastos:{' '}
+                    {selectedBudgetDetails
+                      ? formatMoney(
+                          Number(selectedBudgetExpenseTotal).toFixed(2),
+                          selectedBudgetDetails.moneda,
+                        )
+                      : 'N/D'}
+                  </p>
                   <p className="health-meta">
                     Disponible:{' '}
                     {selectedBudgetDetails
                       ? formatMoney(
-                          selectedBudgetDetails.saldo_disponible,
+                          Number(selectedBudgetAvailable).toFixed(2),
                           selectedBudgetDetails.moneda,
                         )
                       : 'N/D'}
@@ -1891,6 +2290,9 @@ function App() {
                         style={{ width: `${Math.min(selectedBudgetAvailablePercent, 100)}%` }}
                       />
                     </div>
+                    <p className="budget-plot-note">
+                      Porcentajes del plot redondeados a 1 decimal.
+                    </p>
                   </div>
                 </>
               )}
@@ -1948,11 +2350,50 @@ function App() {
               {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
             </span>
           </p>
+          <p className="health-meta budget-id-row">
+            ID del presupuesto:{' '}
+            <span className="budget-id-highlight">
+              {selectedBudgetDetails?.presupuesto_id ?? 'N/D'}
+            </span>
+            <button className="tab-btn budget-copy-btn" type="button" onClick={handleCopyBudgetId}>
+              <span className="button-with-icon">
+                <MdContentCopy aria-hidden="true" />
+                <span>Copy</span>
+              </span>
+            </button>
+          </p>
+          <p className="health-meta">
+            Saldo inicial:{' '}
+            {selectedBudgetDetails
+              ? formatMoney(
+                  Number(selectedBudgetInitialBalance).toFixed(2),
+                  selectedBudgetDetails.moneda,
+                )
+              : 'N/D'}
+          </p>
+          <p className="health-meta">
+            Saldo total:{' '}
+            {selectedBudgetDetails
+              ? formatMoney(
+                  Number(selectedBudgetTotal).toFixed(2),
+                  selectedBudgetDetails.moneda,
+                )
+              : 'N/D'}
+          </p>
+          <p className="health-meta">
+            Total de gastos:{' '}
+            {selectedBudgetDetails
+              ? formatMoney(
+                  Number(selectedBudgetExpenseTotal).toFixed(2),
+                  selectedBudgetDetails.moneda,
+                )
+              : 'N/D'}
+          </p>
           <p className="health-meta">
             Disponible:{' '}
             {selectedBudgetDetails
               ? formatMoney(
-                  selectedBudgetDetails.saldo_disponible,
+                  Number(selectedBudgetAvailable).toFixed(2),
                   selectedBudgetDetails.moneda,
                 )
               : 'N/D'}
@@ -1975,6 +2416,9 @@ function App() {
                 style={{ width: `${Math.min(selectedBudgetAvailablePercent, 100)}%` }}
               />
             </div>
+            <p className="budget-plot-note">
+              Porcentajes del plot redondeados a 1 decimal.
+            </p>
           </div>
         </article>
       ) : null}
@@ -2036,6 +2480,234 @@ function App() {
                   <p className="dashboard-summary-meta">{cashboxTotalLabel}</p>
                 </article>
               </div>
+
+              <article className="card project-density-card">
+                <div className="section-title">
+                  <div>
+                    <h2>Historial de saldo por proyectos</h2>
+                    <p className="muted">
+                      Eje X por fecha y eje Y por saldo acumulado del proyecto.
+                    </p>
+                  </div>
+                  <div className="action-row">
+                    <button
+                      className="tab-btn sort-order-btn"
+                      type="button"
+                      onClick={() =>
+                        setProjectHistoryOffset((current) => Math.max(current - projectHistoryPageSize, 0))
+                      }
+                      disabled={projectHistoryOffset === 0}
+                    >
+                      Proyecto anterior
+                    </button>
+                    <button
+                      className="tab-btn sort-order-btn"
+                      type="button"
+                      onClick={() =>
+                        setProjectHistoryOffset((current) =>
+                          Math.min(current + projectHistoryPageSize, maxProjectHistoryOffset),
+                        )
+                      }
+                      disabled={projectHistoryOffset >= maxProjectHistoryOffset}
+                    >
+                      Proyecto siguiente
+                    </button>
+                  </div>
+                </div>
+
+                {projectHistoryChartData.length ? (
+                  <div className="project-area-chart-shell">
+                    <div className="project-area-chart-header">
+                      {projectHistorySeriesPaths.map((project) => (
+                        <span
+                          key={project.projectId}
+                          className="project-area-chart-badge project-line-badge"
+                          style={{ borderColor: project.color, color: project.color }}
+                        >
+                          {project.name}
+                        </span>
+                      ))}
+                      <span className="project-area-chart-badge project-expense-badge">
+                        Gastos acumulados
+                      </span>
+                    </div>
+
+                    <svg
+                      className="project-area-chart"
+                      viewBox={`0 0 ${projectHistoryChartWidth} ${projectHistoryChartHeight}`}
+                      role="img"
+                      aria-label="Historial de saldo por proyectos"
+                    >
+                      {[0, 1, 2, 3, 4].map((step) => {
+                        const y =
+                          projectHistoryChartPadding.top + (projectHistoryChartInnerHeight / 4) * step
+                        const value = ((projectHistoryMaxValue * (4 - step)) / 4).toFixed(0)
+
+                        return (
+                          <g key={step}>
+                            <line
+                              className="project-area-grid-line"
+                              x1={projectHistoryChartPadding.left}
+                              y1={y}
+                              x2={projectHistoryChartWidth - projectHistoryChartPadding.right}
+                              y2={y}
+                            />
+                            <text
+                              className="project-area-axis-label"
+                              x={projectHistoryChartPadding.left - 10}
+                              y={y + 4}
+                            >
+                              {value}
+                            </text>
+                          </g>
+                        )
+                      })}
+
+                      {projectHistorySeriesPaths.map((project) => (
+                        <g key={project.projectId}>
+                          <path
+                            className="project-history-line"
+                            d={project.path}
+                            style={{ stroke: project.color }}
+                          />
+                          {project.points.map((point) => (
+                            <circle
+                              key={`${project.projectId}-${point.date}`}
+                              className="project-history-point"
+                              cx={point.x}
+                              cy={point.y}
+                              r="3.5"
+                              style={{ fill: project.color }}
+                            />
+                          ))}
+                        </g>
+                      ))}
+                      {projectExpenseSeriesPaths.map((project) => (
+                        <g key={`${project.projectId}-expenses`}>
+                          <path
+                            className="project-expense-line"
+                            d={project.path}
+                            style={{ stroke: '#ef4444' }}
+                          />
+                          {project.points.map((point) => (
+                            <circle
+                              key={`${project.projectId}-expense-${point.date}`}
+                              className="project-expense-point"
+                              cx={point.x}
+                              cy={point.y}
+                              r="2.6"
+                              style={{ fill: '#ef4444' }}
+                            />
+                          ))}
+                        </g>
+                      ))}
+
+                      {projectHistoryDomain.map((date, index) => {
+                        const x =
+                          projectHistoryChartPadding.left +
+                          (projectHistoryDomain.length === 1
+                            ? projectHistoryChartInnerWidth / 2
+                            : (projectHistoryChartInnerWidth / Math.max(projectHistoryDomain.length - 1, 1)) * index)
+
+                        return (
+                          <text
+                            key={date}
+                            className="project-area-x-label"
+                            x={x}
+                            y={projectHistoryChartHeight - 14}
+                            textAnchor="middle"
+                          >
+                            {date.slice(5)}
+                          </text>
+                        )
+                      })}
+                    </svg>
+
+                    <div className="project-area-chart-footer">
+                      {projectHistoryChartData.map((project) => (
+                        <article key={project.projectId} className="project-area-stat">
+                          <h4>{project.name}</h4>
+                          <p>Saldo inicial {formatMoney(project.initialBalance.toFixed(2), project.currency)}</p>
+                          <p>Disponible {formatMoney(project.available.toFixed(2), project.currency)}</p>
+                          <p>
+                            Gastos {formatMoney(
+                              (
+                                projectExpenseSeriesPaths.find((item) => item.projectId === project.projectId)
+                                  ?.totalExpenses ?? 0
+                              ).toFixed(2),
+                              project.currency,
+                            )}
+                          </p>
+                          <p>{project.receiptsCount} comprobantes</p>
+                        </article>
+                      ))}
+                    </div>
+
+                    {excludedProjectCount > 0 ? (
+                      <p className="project-area-note">
+                        {excludedProjectCount} proyectos quedaron fuera por mezclar monedas o no usar CRC.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="empty">No hay historial suficiente en proyectos activos CRC para graficar.</p>
+                )}
+              </article>
+
+              <article className="card project-donut-card">
+                <div className="section-title">
+                  <div>
+                    <h2>Distribucion de presupuesto por proyecto</h2>
+                    <p className="muted">
+                      Cada segmento representa el presupuesto total del proyecto.
+                    </p>
+                  </div>
+                </div>
+
+                {projectDonutSegments.length ? (
+                  <div className="project-donut-layout">
+                    <div className="project-donut-wrap">
+                      <svg
+                        className="project-donut-chart"
+                        viewBox="0 0 264 264"
+                        role="img"
+                        aria-label="Grafico de dona por proyectos"
+                      >
+                        <circle className="project-donut-base" cx="132" cy="132" r="104" />
+                        {projectDonutSegments.map((project) => (
+                          <path key={project.projectId} d={project.path} fill={project.color} />
+                        ))}
+                        <circle className="project-donut-hole" cx="132" cy="132" r="60" />
+                        <text className="project-donut-total-label" x="132" y="122" textAnchor="middle">
+                          Total
+                        </text>
+                        <text className="project-donut-total-value" x="132" y="146" textAnchor="middle">
+                          {formatNumberMask(projectDonutTotal)}
+                        </text>
+                      </svg>
+                    </div>
+
+                    <div className="project-donut-legend">
+                      {projectDonutSegments.map((project) => (
+                        <article key={project.projectId} className="project-donut-item">
+                          <span
+                            className="project-donut-swatch"
+                            style={{ backgroundColor: project.color }}
+                            aria-hidden="true"
+                          />
+                          <div>
+                            <h4>{project.name}</h4>
+                            <p>{project.percent.toFixed(1)}% del total</p>
+                            <p>{formatMoney(project.total.toFixed(2), 'CRC')}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="empty">No hay proyectos activos con presupuesto total para representar en la dona.</p>
+                )}
+              </article>
             </section>
           ) : activeDashboard === 'accounts' ? (
             <section className="panel-stack">
@@ -2181,9 +2853,10 @@ function App() {
                 />
               </label>
               <label className="field">
-                <span>Factura</span>
+                <span>{receiptNeedsIssuerData ? 'Factura *' : 'Factura'}</span>
                 <input
                   className="input"
+                  required={receiptNeedsIssuerData}
                   value={receiptForm.numero_factura}
                   onChange={(event) =>
                     setReceiptForm((current) => ({
@@ -2194,9 +2867,10 @@ function App() {
                 />
               </label>
               <label className="field">
-                <span>Negocio</span>
+                <span>{receiptNeedsIssuerData ? 'Negocio *' : 'Negocio'}</span>
                 <input
                   className="input"
+                  required={receiptNeedsIssuerData}
                   value={receiptForm.negocio}
                   onChange={(event) =>
                     setReceiptForm((current) => ({
@@ -2207,9 +2881,10 @@ function App() {
                 />
               </label>
               <label className="field">
-                <span>Cedula</span>
+                <span>{receiptNeedsIssuerData ? 'Cedula *' : 'Cedula'}</span>
                 <input
                   className="input"
+                  required={receiptNeedsIssuerData}
                   value={receiptForm.cedula}
                   onChange={(event) =>
                     setReceiptForm((current) => ({
@@ -2235,17 +2910,26 @@ function App() {
               <label className="field">
                 <span>Monto del gasto</span>
                 <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  className="input amount-input"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
                   value={receiptForm.monto_gasto}
                   onChange={(event) =>
                     setReceiptForm((current) => ({
                       ...current,
-                      monto_gasto: event.target.value,
+                      monto_gasto: sanitizeDecimalInput(event.target.value),
                     }))
                   }
+                  onFocus={(event) => {
+                    requestAnimationFrame(() => {
+                      event.currentTarget.select()
+                    })
+                  }}
+                  onMouseUp={(event) => {
+                    event.preventDefault()
+                    event.currentTarget.select()
+                  }}
                 />
               </label>
               <label className="field">

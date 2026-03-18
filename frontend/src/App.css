@@ -18,9 +18,9 @@ body {
 }
 
 body.light-theme {
-  background-color: #013668;
+  background-color: #0b3a63;
   background-image:
-    linear-gradient(rgba(1, 54, 104, 0.88), rgba(1, 54, 104, 0.88)),
+    linear-gradient(rgba(11, 58, 99, 0.92), rgba(11, 58, 99, 0.92)),
     url('/logo1_013668.svg');
   background-repeat: repeat;
   background-size: 260px auto;
@@ -702,6 +702,204 @@ h2 {
   background: linear-gradient(90deg, #22c55e, #86efac);
 }
 
+.project-density-card {
+  margin-top: 14px;
+}
+
+.project-area-chart-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.project-area-chart-header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.project-area-chart-badge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.project-line-badge {
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.project-expense-badge {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #fda4af;
+}
+
+.project-area-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.project-area-grid-line {
+  stroke: rgba(148, 163, 184, 0.2);
+  stroke-width: 1;
+}
+
+.project-area-axis-label,
+.project-area-x-label {
+  fill: #94a3b8;
+  font-size: 11px;
+}
+
+.project-history-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.project-history-point {
+  stroke: rgba(15, 23, 42, 0.95);
+  stroke-width: 2;
+}
+
+.project-expense-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.project-expense-point {
+  stroke: rgba(15, 23, 42, 0.9);
+  stroke-width: 1.5;
+}
+
+.project-area-chart-footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.project-area-stat {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #23324b;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.project-area-stat h4,
+.project-area-stat p {
+  margin: 0;
+}
+
+.project-area-stat h4 {
+  color: #f8fafc;
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+}
+
+.project-area-stat p {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.project-area-note {
+  margin: 0;
+  color: #fbbf24;
+  font-size: 0.82rem;
+}
+
+.project-donut-card {
+  margin-top: 14px;
+}
+
+.project-donut-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.project-donut-wrap {
+  display: grid;
+  place-items: center;
+}
+
+.project-donut-chart {
+  width: min(100%, 320px);
+  height: auto;
+  display: block;
+}
+
+.project-donut-base {
+  fill: rgba(15, 23, 42, 0.7);
+}
+
+.project-donut-hole {
+  fill: #0f172a;
+}
+
+.project-donut-total-label {
+  fill: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.project-donut-total-value {
+  fill: #f8fafc;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.project-donut-legend {
+  display: grid;
+  gap: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #23324b;
+}
+
+.project-donut-item {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.72);
+  border-top: 1px solid rgba(51, 65, 85, 0.65);
+}
+
+.project-donut-item:first-child {
+  border-top: 0;
+}
+
+.project-donut-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.project-donut-item h4,
+.project-donut-item p {
+  margin: 0;
+}
+
+.project-donut-item h4 {
+  color: #f8fafc;
+  font-size: 0.96rem;
+  margin-bottom: 4px;
+}
+
+.project-donut-item p {
+  color: #94a3b8;
+  font-size: 0.84rem;
+}
+
 .health-meta,
 .health-row {
   margin: 8px 0;
@@ -711,6 +909,24 @@ h2 {
 .budget-name-highlight {
   color: #4ade80;
   font-weight: 800;
+}
+
+.budget-id-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.budget-id-highlight {
+  color: #c084fc;
+  font-weight: 800;
+}
+
+.budget-copy-btn {
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  border-color: rgba(192, 132, 252, 0.4);
 }
 
 .health-badge {
@@ -808,6 +1024,11 @@ h2 {
   color: #e2e8f0;
   border-radius: 10px;
   padding: 9px 12px;
+}
+
+.amount-input {
+  text-align: left;
+  direction: ltr;
 }
 
 .input:focus-visible,
@@ -1036,15 +1257,17 @@ h2 {
 }
 
 .record-note {
-  margin-top: 10px !important;
+  margin-top: 4px !important;
   color: #fcd34d;
   font-size: 0.9rem;
+  line-height: 1.05;
 }
 
 .record-conversion {
-  margin-top: 10px !important;
+  margin-top: 4px !important;
   color: #93c5fd;
   font-size: 0.9rem;
+  line-height: 1.05;
 }
 
 .excel-list-wrapper {
@@ -1058,12 +1281,12 @@ h2 {
 .excel-row {
   display: grid;
   grid-template-columns: 110px 120px 1.4fr 140px 140px 140px 180px 120px;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .excel-list-header {
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: #172554;
   color: #dbeafe;
   font-size: 0.82rem;
@@ -1077,9 +1300,10 @@ h2 {
 }
 
 .excel-row {
-  padding: 12px 14px;
+  padding: 5px 10px;
   border-top: 1px solid #23324b;
   cursor: pointer;
+  position: relative;
 }
 
 .excel-row:hover {
@@ -1090,12 +1314,17 @@ h2 {
   min-width: 0;
   color: #e2e8f0;
   font-size: 0.92rem;
+  line-height: 0.5;
 }
 
 .excel-type,
 .excel-balance,
 .excel-amount {
   font-weight: 700;
+}
+
+.excel-row > .excel-amount {
+  color: #f87171;
 }
 
 .excel-type-funding {
@@ -1110,13 +1339,21 @@ h2 {
   color: #4ade80;
 }
 
-.excel-amount-funding {
+.excel-row > .excel-amount-funding {
   color: #4ade80;
+}
+
+body.light-theme .excel-row > .excel-amount {
+  color: #dc2626;
+}
+
+body.light-theme .excel-row > .excel-amount-funding {
+  color: #16a34a;
 }
 
 .excel-row-detail {
   grid-column: 1 / -1;
-  padding-top: 10px;
+  padding-top: 4px;
 }
 
 .budget-bar-group {
@@ -1127,6 +1364,12 @@ h2 {
 
 .budget-bar-group-compact {
   margin-top: 14px;
+}
+
+.budget-plot-note {
+  margin: 6px 0 0;
+  color: #fbbf24;
+  font-size: 0.78rem;
 }
 
 .budget-bar-labels {
@@ -1204,14 +1447,16 @@ h2 {
 }
 
 .selected-card {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.45);
+  background: rgba(20, 83, 45, 0.28);
+  box-shadow:
+    inset 0 0 0 2px rgba(74, 222, 128, 0.95),
+    0 0 0 1px rgba(34, 197, 94, 0.18);
 }
 
 .decision-box {
   display: grid;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .approval-feedback {
@@ -1358,9 +1603,9 @@ body.light-theme .input,
 body.light-theme .select,
 body.light-theme .tab-btn,
 body.light-theme .theme-btn {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(226, 232, 240, 0.84);
   color: #0f172a;
-  border-color: rgba(148, 163, 184, 0.5);
+  border-color: rgba(100, 116, 139, 0.58);
 }
 
 body.light-theme h2,
@@ -1385,13 +1630,13 @@ body.light-theme .sync-status {
 
 body.light-theme .dashboard-summary-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.74)),
-    rgba(255, 255, 255, 0.82);
+    linear-gradient(180deg, rgba(226, 232, 240, 0.9), rgba(203, 213, 225, 0.8)),
+    rgba(226, 232, 240, 0.86);
 }
 
 body.light-theme .dashboard-summary-icon {
-  background: rgba(248, 250, 252, 0.92);
-  border-color: rgba(148, 163, 184, 0.24);
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(100, 116, 139, 0.3);
 }
 
 body.light-theme .dashboard-summary-label {
@@ -1405,11 +1650,11 @@ body.light-theme .dashboard-summary-meta {
 
 body.light-theme .transfer-panel {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(226, 232, 240, 0.58)),
-    rgba(255, 255, 255, 0.72);
+    linear-gradient(145deg, rgba(226, 232, 240, 0.82), rgba(203, 213, 225, 0.68)),
+    rgba(226, 232, 240, 0.78);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 18px 38px rgba(148, 163, 184, 0.22);
+    inset 0 1px 0 rgba(248, 250, 252, 0.62),
+    0 18px 38px rgba(51, 65, 85, 0.22);
 }
 
 body.light-theme .transfer-badge {
@@ -1432,7 +1677,67 @@ body.light-theme .transfer-account-meta {
 }
 
 body.light-theme .transfer-account-card {
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(241, 245, 249, 0.54);
+}
+
+body.light-theme .project-area-axis-label,
+body.light-theme .project-area-x-label {
+  fill: #64748b;
+}
+
+body.light-theme .project-line-badge {
+  background: rgba(241, 245, 249, 0.92);
+}
+
+body.light-theme .project-expense-badge {
+  background: rgba(255, 228, 230, 0.92);
+}
+
+body.light-theme .project-area-stat {
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(100, 116, 139, 0.28);
+}
+
+body.light-theme .project-area-stat h4 {
+  color: #0f172a;
+}
+
+body.light-theme .project-area-stat p {
+  color: #334155;
+}
+
+body.light-theme .project-history-point {
+  stroke: rgba(241, 245, 249, 0.96);
+}
+
+body.light-theme .project-expense-point {
+  stroke: rgba(241, 245, 249, 0.96);
+}
+
+body.light-theme .project-donut-base,
+body.light-theme .project-donut-hole {
+  fill: rgba(226, 232, 240, 0.95);
+}
+
+body.light-theme .project-donut-total-value {
+  fill: #0f172a;
+}
+
+body.light-theme .project-donut-legend {
+  border-color: rgba(100, 116, 139, 0.28);
+}
+
+body.light-theme .project-donut-item {
+  background: rgba(241, 245, 249, 0.88);
+  border-top-color: rgba(148, 163, 184, 0.35);
+}
+
+body.light-theme .project-donut-item h4 {
+  color: #0f172a;
+}
+
+body.light-theme .project-donut-item p {
+  color: #475569;
 }
 
 @media (max-width: 900px) {
@@ -1451,7 +1756,8 @@ body.light-theme .transfer-account-card {
   .dashboard-layout,
   .panel-grid,
   .world-clocks,
-  .form-grid.two-columns {
+  .form-grid.two-columns,
+  .project-donut-layout {
     grid-template-columns: 1fr;
   }
 
