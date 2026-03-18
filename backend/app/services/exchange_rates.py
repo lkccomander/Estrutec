@@ -34,6 +34,8 @@ _ROW_PATTERN = re.compile(
     r"(?P<spread>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
     r"(?P<updated_at>\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.)$"
 )
+_TIMESTAMP_PATTERN = re.compile(r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.$")
+_DECIMAL_PATTERN = re.compile(r"\d{1,3}(?:\.\d{3})*,\d{2}")
 
 
 class ExchangeRateScrapingError(RuntimeError):
@@ -126,10 +128,33 @@ def _parse_entries(lines: list[str]) -> list[ParsedExchangeRateEntry]:
     for raw_line in lines:
         line = _normalize_label(raw_line)
         match = _ROW_PATTERN.match(line)
-        if not match:
+
+        if match:
+            label = match.group("label").strip()
+            buy_value = match.group("buy")
+            sell_value = match.group("sell")
+            spread_value = match.group("spread")
+            updated_at_value = match.group("updated_at")
+        else:
+            timestamp_match = _TIMESTAMP_PATTERN.search(line)
+            if not timestamp_match:
+                continue
+
+            updated_at_value = timestamp_match.group(0)
+            prefix = line[: timestamp_match.start()].strip()
+            decimal_matches = list(_DECIMAL_PATTERN.finditer(prefix))
+            if len(decimal_matches) < 3:
+                continue
+
+            buy_match, sell_match, spread_match = decimal_matches[-3:]
+            buy_value = buy_match.group(0)
+            sell_value = sell_match.group(0)
+            spread_value = spread_match.group(0)
+            label = prefix[: buy_match.start()].strip()
+
+        if not label:
             continue
 
-        label = match.group("label").strip()
         entity_type = next(
             (candidate for candidate in _ENTITY_TYPES if label.startswith(candidate)),
             "",
@@ -149,10 +174,10 @@ def _parse_entries(lines: list[str]) -> list[ParsedExchangeRateEntry]:
             ParsedExchangeRateEntry(
                 entity_type=entity_type,
                 entity=entity,
-                buy_rate=_parse_decimal(match.group("buy")),
-                sell_rate=_parse_decimal(match.group("sell")),
-                spread=_parse_decimal(match.group("spread")),
-                updated_at=_parse_timestamp(match.group("updated_at")),
+                buy_rate=_parse_decimal(buy_value),
+                sell_rate=_parse_decimal(sell_value),
+                spread=_parse_decimal(spread_value),
+                updated_at=_parse_timestamp(updated_at_value),
             )
         )
 
