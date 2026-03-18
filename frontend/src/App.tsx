@@ -2333,7 +2333,6 @@ function App() {
                   </p>
                 </>
               )}
-              </article>
             </article>
           </div>
         )}
