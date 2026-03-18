@@ -75,7 +75,7 @@ pip install -r requirements.txt
 
 5. Configure environment variables.
 
-The backend expects a database connection string and app settings. Review the local `.env` file in `backend/` and adapt it to your environment.
+The backend expects a database connection string and app settings. Use `backend/.env.example` as reference and adapt it to your environment.
 
 6. Run the API:
 
@@ -162,6 +162,60 @@ The frontend is organized around dashboards and feature modules:
 - `icons`
 
 The authenticated flow starts in the budgets domain, with projects as the main entry point before drilling down into individual budgets.
+
+## CI/CD
+
+This repository now includes GitHub Actions workflows for validation and Railway deployment.
+
+### Continuous Integration
+
+The `CI` workflow runs on pushes to `main` and on pull requests. It validates:
+
+- frontend linting with `npm run lint`
+- frontend production build with `npm run build`
+- backend SQL integration tests against a temporary PostgreSQL service
+- backend API smoke tests with `pytest`
+
+You can run the SQL checks locally with:
+
+```bash
+bash scripts/run_sql_tests.sh
+```
+
+Make sure `DATABASE_URL` is configured before running the script.
+
+### Continuous Deployment
+
+Two deployment workflows are included:
+
+- `Deploy Backend`
+- `Deploy Frontend`
+
+Both deploy workflows run automatically after `CI` succeeds on `main`, and can also be triggered manually from GitHub Actions.
+
+Required GitHub Actions secrets:
+
+- `RAILWAY_TOKEN`
+- `RAILWAY_BACKEND_SERVICE`
+- `RAILWAY_FRONTEND_SERVICE`
+
+Recommended Railway setup:
+
+1. Create one Railway project with separate services for `backend` and `frontend`.
+2. Keep environment variables configured directly in Railway per service.
+3. Set the backend service root to `backend` and the frontend service root to `frontend` if you also use Railway's GitHub integration.
+
+Backend deployment notes:
+
+- Railway config file: `backend/railway.json`
+- Required Railway variables: `DATABASE_URL`, `JWT_SECRET_KEY`, and any other backend secrets
+- The deploy uses a `preDeployCommand` to run startup migrations before the API becomes active
+
+Frontend deployment notes:
+
+- Railway config file: `frontend/railway.json`
+- Required Railway variable: `VITE_API_URL`
+- The frontend is built during deploy and served with `vite preview`
 
 ## Development Notes
 

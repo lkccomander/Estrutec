@@ -111,10 +111,19 @@ Trabajo visible de hoy en frontend:
 - feedback contextual debajo del boton que ejecuta la accion
 - ensanche global del dashboard ajustando `.container` a `1320px`
 - correcciones repetidas de alineacion y ancho en el detalle de presupuesto, separando `Presupuesto activo` como `card-group` propio para igualar estructura con `Crear comprobante` y `Comprobantes`
+- `Dashboard` ahora funciona como vista analitica con cards resumen
+- historial de saldo por proyectos con series de `saldo disponible`, `gastos acumulados` y `saldo total`
+- interaccion para ocultar o mostrar proyectos desde badges y cards del historial
+- grafico de dona por proyectos basado en presupuesto total
+- panel de mapa de Costa Rica con marcadores por coordenadas de proyecto
+- mantenimiento de proyectos extendido con `latitud` y `longitud`
 
 Pendiente visible:
 
 - [index.html](/mnt/c/Projects/Elatilo/frontend/index.html) y [vite.config.ts](/mnt/c/Projects/Elatilo/frontend/vite.config.ts) siguen practicamente con plantilla base de Vite y aun no reflejan branding ni configuracion avanzada del proyecto
+- siguiente frente de trabajo acordado: `CI/CD` para despliegue en `Railway`
+- plan inicial: GitHub Actions para `CI`, Railway para `CD`, con servicios separados de `backend` y `frontend`
+- el backend debe considerar migraciones en `pre-deploy`
 
 ## Autenticacion
 

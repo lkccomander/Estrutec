@@ -132,6 +132,9 @@ Current important decisions:
 - use project as the main navigation context before budgets
 - default project filtering to active projects
 - prefer direct action placement inside project cards over detached navigation controls
+- use `Dashboard` as the global analytics surface
+- support project coordinates for geographic visualization
+- show project history with balance, expenses, and total-balance series
 
 Known operational requirement:
 - DATABASE_URL user must have enough DB permissions for startup compatibility scripts
@@ -141,6 +144,8 @@ Known pending items:
 - user password change is still pending a backend endpoint
 - App.tsx still needs more extraction despite the new modules
 - visual polish is still iterative in the budget-detail header area
+- next infrastructure step is CI/CD for Railway
+- expected shape: GitHub Actions as CI gate, Railway as deploy target, separate frontend/backend services
 
 Useful project memory files:
 - project_brain/decision.md

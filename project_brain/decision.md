@@ -271,3 +271,74 @@ Motivo:
 - evitar que un presupuesto cerrado parezca todavia operativo
 - reducir lectura incorrecta del estado financiero por color
 - mantener consistencia visual entre estado funcional y representacion grafica
+
+## 17. El Dashboard principal se usa como vista analitica
+
+Se decidio que `Dashboard` deje de ser solo una vista vacia y funcione como tablero analitico de alto nivel.
+
+Decision:
+
+- `Dashboard` concentra visualizaciones transversales del sistema
+- debe mostrar indicadores agregados de proyectos, presupuestos y comprobantes
+- el historial principal usa eje X por fecha y eje Y por saldo acumulado por proyecto
+- ese historial debe exponer al menos tres comportamientos: `saldo disponible`, `gastos acumulados` y `saldo total`
+- el usuario puede ocultar series por proyecto desde el label superior o desde la tarjeta resumen inferior
+
+Motivo:
+
+- separar analitica global de la operacion diaria por dashboard
+- facilitar lectura ejecutiva sin entrar a cada presupuesto
+- permitir comparacion temporal entre proyectos activos
+
+## 18. Los proyectos soportan coordenadas geograficas
+
+Se decidio extender el modelo de proyectos para almacenar coordenadas geograficas propias.
+
+Decision:
+
+- cada proyecto puede guardar `latitud` y `longitud`
+- esas coordenadas se exponen desde `GET /proyectos`
+- las coordenadas se editan desde el mantenimiento de proyectos
+- los proyectos sin coordenadas no se renderizan en el mapa
+
+Motivo:
+
+- habilitar visualizaciones geograficas dentro del dashboard
+- evitar depender solo de direcciones textuales para ubicar proyectos
+- permitir futuras integraciones con mapas y analitica territorial
+
+## 19. El Dashboard principal incluye mapa y dona por proyectos
+
+Se decidio complementar el dashboard analitico con visualizaciones agregadas por proyecto.
+
+Decision:
+
+- el dashboard incluye un grafico de dona por proyecto basado en el presupuesto total del proyecto
+- el dashboard incluye un mapa de Costa Rica con marcadores por proyecto usando sus coordenadas
+- la dona debe llevar leyenda lateral con el color de cada proyecto
+- el mapa solo usa proyectos activos con coordenadas validas
+
+Motivo:
+
+- mejorar lectura visual de distribucion presupuestaria
+- agregar contexto geografico a la cartera de proyectos
+- reforzar el rol del dashboard como vista global del portafolio
+
+## 20. El despliegue objetivo se hara sobre Railway con CI previo
+
+Se decidio preparar el siguiente paso de infraestructura para desplegar el proyecto en Railway, usando CI como compuerta antes del deploy.
+
+Decision:
+
+- el destino de despliegue sera `Railway`
+- se montara `CI` en GitHub Actions antes de automatizar `CD`
+- Railway debe desplegar al menos dos servicios: `backend` y `frontend`
+- el despliegue debe usar variables de entorno separadas por servicio
+- el backend debe contemplar un `pre-deploy command` para correr migraciones antes de quedar activo
+- si Railway se integra con GitHub, debe configurarse para esperar el resultado del `CI` antes de desplegar
+
+Motivo:
+
+- estabilizar el ritmo de cambios recientes antes de seguir agregando funcionalidades
+- reducir riesgo de desplegar codigo roto o migraciones incompletas
+- separar con claridad validacion, despliegue y configuracion de entorno
