@@ -185,3 +185,18 @@ class MovementRead(BaseModel):
     descripcion: str | None
     referencia_externa: str | None
     created_at: datetime
+
+
+class LogEntryCreate(BaseModel):
+    mensaje: str
+
+
+class LogEntryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    log_id: UUID
+    mensaje: str
+    usuario_id: UUID
+    autor_nombre: str
+    autor_email: str
+    created_at: datetime

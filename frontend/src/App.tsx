@@ -15,6 +15,7 @@ import { useI18n } from './i18n/useI18n'
 import { IconsDashboard } from './modules/icons/IconsDashboard'
 import { ProjectBudgetsDashboard } from './modules/budgets/ProjectBudgetsDashboard'
 import { ExchangeRateDashboard } from './modules/exchange/ExchangeRateDashboard'
+import { LogDashboard } from './modules/log/LogDashboard'
 import { ProjectsDashboard } from './modules/projects/ProjectsDashboard'
 import { UsersDashboard } from './modules/users/UsersDashboard'
 
@@ -74,6 +75,15 @@ type ExchangeRateDashboardData = {
   best_buy: ExchangeRateHighlight
   best_sell: ExchangeRateHighlight
   entries: ExchangeRateEntry[]
+}
+
+type LogEntry = {
+  log_id: string
+  mensaje: string
+  usuario_id: string
+  autor_nombre: string
+  autor_email: string
+  created_at: string
 }
 
 type Project = {
@@ -311,7 +321,7 @@ function App() {
   const { t, toggleLanguage } = useI18n()
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('elatilo_token'))
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [activeDashboard, setActiveDashboard] = useState<'home' | 'budgets' | 'budget-detail' | 'users' | 'icons' | 'accounts' | 'exchange'>(
+  const [activeDashboard, setActiveDashboard] = useState<'home' | 'budgets' | 'budget-detail' | 'users' | 'icons' | 'accounts' | 'exchange' | 'log'>(
     'home',
   )
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
@@ -320,6 +330,7 @@ function App() {
   const [exchangeRateDashboard, setExchangeRateDashboard] = useState<ExchangeRateDashboardData | null>(null)
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
   const [isExchangeRateLoading, setIsExchangeRateLoading] = useState(false)
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [users, setUsers] = useState<AuthUser[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [projectFilter, setProjectFilter] = useState<'active' | 'all' | 'archived'>('active')
@@ -340,6 +351,7 @@ function App() {
   const [actionFeedback, setActionFeedback] = useState<ActionFeedbackState | null>(null)
   const [isBusy, setIsBusy] = useState(false)
   const [receiptFilter, setReceiptFilter] = useState('')
+  const [logMessage, setLogMessage] = useState('')
   const deferredFilter = useDeferredValue(receiptFilter)
   const [loginForm, setLoginForm] = useState({
     email: 'andres.admin@example.com',
@@ -595,6 +607,8 @@ function App() {
         ? t('dashboardLabels.accounts')
       : activeDashboard === 'exchange'
         ? t('dashboardLabels.exchange')
+      : activeDashboard === 'log'
+        ? t('dashboardLabels.log')
       : activeDashboard === 'users'
       ? t('dashboardLabels.users')
       : activeDashboard === 'icons'
@@ -701,12 +715,13 @@ function App() {
   }
 
   async function loadProtectedData(activeToken: string, preferredProjectId?: string) {
-    const [me, userList, projectList, budgetList, receiptList] = await Promise.all([
+    const [me, userList, projectList, budgetList, receiptList, logList] = await Promise.all([
       request<AuthUser>('/auth/me', {}, activeToken),
       request<AuthUser[]>('/usuarios', {}, activeToken),
       request<Project[]>('/proyectos', {}, activeToken),
       request<Budget[]>('/presupuestos', {}, activeToken),
       request<Receipt[]>('/comprobantes', {}, activeToken),
+      request<LogEntry[]>('/log', {}, activeToken),
     ])
 
     startTransition(() => {
@@ -737,6 +752,7 @@ function App() {
       setProjects(projectList)
       setBudgets(budgetList)
       setReceipts(receiptList)
+      setLogEntries(logList)
       setSelectedProjectId(nextProjectId)
       setSelectedBudgetId(nextBudgetId)
       setSelectedReceiptId(nextReceiptId)
@@ -1433,6 +1449,10 @@ function App() {
     setActiveDashboard('exchange')
   }
 
+  function openLogDashboard() {
+    setActiveDashboard('log')
+  }
+
   function handleProjectFilterChange(filter: 'active' | 'all' | 'archived') {
     setProjectFilter(filter)
     if (filter === 'active' && selectedProject && !selectedProject.activo) {
@@ -1872,6 +1892,42 @@ function App() {
     }
   }
 
+  async function handleLogCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token) {
+      return
+    }
+
+    if (!logMessage.trim()) {
+      showActionFeedback('log-create', 'Escribe un mensaje antes de guardarlo.')
+      return
+    }
+
+    try {
+      setIsBusy(true)
+      const entry = await request<LogEntry>(
+        '/log',
+        {
+          method: 'POST',
+          body: JSON.stringify({ mensaje: logMessage.trim() }),
+        },
+        token,
+      )
+      startTransition(() => {
+        setLogEntries((current) => [entry, ...current])
+        setLogMessage('')
+      })
+      showActionFeedback('log-create', 'Mensaje guardado en el log.')
+    } catch (error) {
+      showActionFeedback(
+        'log-create',
+        error instanceof Error ? error.message : 'No se pudo guardar el mensaje.',
+      )
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem('elatilo_token')
     setToken(null)
@@ -2264,6 +2320,16 @@ function App() {
                 <span>{t('menu.exchange')}</span>
               </span>
             </button>
+            <button
+              className={`tab-btn ${activeDashboard === 'log' ? 'active' : ''}`}
+              type="button"
+              onClick={openLogDashboard}
+            >
+              <span className="button-with-icon">
+                <HiOutlineDocumentText aria-hidden="true" />
+                <span>{t('menu.log')}</span>
+              </span>
+            </button>
           </div>
           <div className="action-row">
             {activeDashboard === 'budget-detail' ? (
@@ -2293,7 +2359,8 @@ function App() {
         activeDashboard === 'budgets' ||
         activeDashboard === 'budget-detail' ||
         activeDashboard === 'accounts' ||
-        activeDashboard === 'exchange' ? null : (
+        activeDashboard === 'exchange' ||
+        activeDashboard === 'log' ? null : (
           <div className="health-layout">
             <article className="health-card">
               <h3>
@@ -2976,6 +3043,15 @@ function App() {
                 void loadExchangeRateDashboard()
               }}
             />
+          ) : activeDashboard === 'log' ? (
+            <LogDashboard
+              entries={logEntries}
+              message={logMessage}
+              isBusy={isBusy}
+              actionFeedback={actionFeedback}
+              onMessageChange={setLogMessage}
+              onSubmit={handleLogCreate}
+            />
           ) : activeDashboard === 'users' ? (
             <UsersDashboard
               users={users}
@@ -3177,7 +3253,7 @@ function App() {
               </label>
               {requiresExchangeRate ? (
                 <label className="field">
-                  <span>Tipo de cambio</span>
+                  <span>{t('receiptForm.exchangeRate')}</span>
                   <input
                     className="input"
                     type="number"

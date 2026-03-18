@@ -5,12 +5,14 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.db.connection import get_db_connection
 from app.repositories.budgets import BudgetRepository
+from app.repositories.log_entries import LogEntryRepository
 from app.repositories.projects import ProjectRepository
 from app.repositories.receipts import ReceiptRepository
 from app.repositories.users import UserRepository
 from app.security import decode_access_token
 from app.services.auth import AuthService
 from app.services.budgets import BudgetService
+from app.services.log_entries import LogEntryService
 from app.services.projects import ProjectService
 from app.services.receipts import ReceiptService
 from app.services.users import UserService
@@ -32,6 +34,10 @@ def get_budget_service(connection=Depends(get_db_connection)) -> BudgetService:
 
 def get_project_service(connection=Depends(get_db_connection)) -> ProjectService:
     return ProjectService(ProjectRepository(connection))
+
+
+def get_log_entry_service(connection=Depends(get_db_connection)) -> LogEntryService:
+    return LogEntryService(LogEntryRepository(connection))
 
 
 def get_receipt_service(connection=Depends(get_db_connection)) -> ReceiptService:
