@@ -570,7 +570,12 @@ function App() {
   }, [token, selectedBudgetId])
 
   useEffect(() => {
-    if (!token || !selectedReceiptId) {
+    if (!token) {
+      return
+    }
+
+    if (!selectedReceiptId) {
+      setAttachments([])
       return
     }
 
