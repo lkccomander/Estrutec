@@ -42,6 +42,7 @@
   "dashboardLabels": {
     "home": "Dashboard",
     "accounts": "Accounts Dashboard",
+    "exchange": "Exchange Rate Dashboard",
     "users": "Users Dashboard",
     "icons": "Icons Dashboard",
     "budgetDetail": "Active Budget Dashboard",
@@ -54,6 +55,7 @@
     "users": "Users",
     "icons": "Icons",
     "accounts": "Accounts",
+    "exchange": "Exchange rates",
     "sync": "Sync",
     "logout": "Log out",
     "backToBudgets": "Back to budgets"

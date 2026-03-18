@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes.attachments import router as attachments_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.budgets import router as budgets_router
+from app.api.routes.exchange_rates import router as exchange_rates_router
 from app.api.routes.health import router as health_router
 from app.api.routes.projects import router as projects_router
 from app.api.routes.receipts import router as receipts_router
@@ -130,6 +131,7 @@ def create_app() -> FastAPI:
     )
     app.add_event_handler("startup", _run_startup_migrations)
     app.include_router(health_router)
+    app.include_router(exchange_rates_router)
     app.include_router(auth_router)
     app.include_router(users_router)
     app.include_router(projects_router)

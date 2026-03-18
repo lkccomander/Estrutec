@@ -42,6 +42,7 @@
   "dashboardLabels": {
     "home": "Dashboard",
     "accounts": "Dashboard de Cuentas",
+    "exchange": "Dashboard de Tipo de Cambio",
     "users": "Dashboard de Usuarios",
     "icons": "Dashboard de Iconos",
     "budgetDetail": "Dashboard de Presupuesto Activo",
@@ -54,6 +55,7 @@
     "users": "Usuarios",
     "icons": "Iconos",
     "accounts": "Cuentas",
+    "exchange": "Tipo de cambio",
     "sync": "Sincronizar",
     "logout": "Cerrar sesion",
     "backToBudgets": "Volver a presupuestos"

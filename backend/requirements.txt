@@ -3,6 +3,7 @@ uvicorn
 psycopg[binary]
 python-dotenv
 pydantic
+httpx
 python-jose[cryptography]
 passlib[bcrypt]
 argon2-cffi

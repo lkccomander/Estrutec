@@ -14,6 +14,7 @@ import { ActionFeedback } from './components/ActionFeedback'
 import { useI18n } from './i18n/useI18n'
 import { IconsDashboard } from './modules/icons/IconsDashboard'
 import { ProjectBudgetsDashboard } from './modules/budgets/ProjectBudgetsDashboard'
+import { ExchangeRateDashboard } from './modules/exchange/ExchangeRateDashboard'
 import { ProjectsDashboard } from './modules/projects/ProjectsDashboard'
 import { UsersDashboard } from './modules/users/UsersDashboard'
 
@@ -44,6 +45,35 @@ type Health = {
   version?: string
   database?: string
   user?: string
+}
+
+type ExchangeRateEntry = {
+  entity_type: string
+  entity: string
+  buy_rate: number
+  sell_rate: number
+  spread: number
+  updated_at: string
+}
+
+type ExchangeRateHighlight = {
+  entity_type: string
+  entity: string
+  rate: number
+  updated_at: string
+}
+
+type ExchangeRateDashboardData = {
+  source: string
+  source_url: string
+  report_date: string
+  fetched_at: string
+  average_buy_rate: number
+  average_sell_rate: number
+  average_spread: number
+  best_buy: ExchangeRateHighlight
+  best_sell: ExchangeRateHighlight
+  entries: ExchangeRateEntry[]
 }
 
 type Project = {
@@ -281,12 +311,15 @@ function App() {
   const { t, toggleLanguage } = useI18n()
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('elatilo_token'))
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [activeDashboard, setActiveDashboard] = useState<'home' | 'budgets' | 'budget-detail' | 'users' | 'icons' | 'accounts'>(
+  const [activeDashboard, setActiveDashboard] = useState<'home' | 'budgets' | 'budget-detail' | 'users' | 'icons' | 'accounts' | 'exchange'>(
     'home',
   )
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
   const [health, setHealth] = useState<Health | null>(null)
   const [dbHealth, setDbHealth] = useState<Health | null>(null)
+  const [exchangeRateDashboard, setExchangeRateDashboard] = useState<ExchangeRateDashboardData | null>(null)
+  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
+  const [isExchangeRateLoading, setIsExchangeRateLoading] = useState(false)
   const [users, setUsers] = useState<AuthUser[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [projectFilter, setProjectFilter] = useState<'active' | 'all' | 'archived'>('active')
@@ -560,6 +593,8 @@ function App() {
       ? t('dashboardLabels.home')
       : activeDashboard === 'accounts'
         ? t('dashboardLabels.accounts')
+      : activeDashboard === 'exchange'
+        ? t('dashboardLabels.exchange')
       : activeDashboard === 'users'
       ? t('dashboardLabels.users')
       : activeDashboard === 'icons'
@@ -638,6 +673,31 @@ function App() {
       setDbHealth(databaseHealth)
       setLastUpdate(new Date().toLocaleString('es-CR'))
     })
+  }
+
+  async function loadExchangeRateDashboard() {
+    startTransition(() => {
+      setIsExchangeRateLoading(true)
+      setExchangeRateError(null)
+    })
+
+    try {
+      const dashboard = await request<ExchangeRateDashboardData>('/tipo-cambio/ventanilla')
+      startTransition(() => {
+        setExchangeRateDashboard(dashboard)
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'No se pudo cargar el tipo de cambio del BCCR.'
+      startTransition(() => {
+        setExchangeRateError(message)
+      })
+      throw error
+    } finally {
+      startTransition(() => {
+        setIsExchangeRateLoading(false)
+      })
+    }
   }
 
   async function loadProtectedData(activeToken: string, preferredProjectId?: string) {
@@ -745,7 +805,22 @@ function App() {
 
     try {
       setIsBusy(true)
-      await loadProtectedData(activeToken, preferredProjectId)
+      const [protectedDataResult, exchangeRateResult] = await Promise.allSettled([
+        loadProtectedData(activeToken, preferredProjectId),
+        loadExchangeRateDashboard(),
+      ])
+
+      if (protectedDataResult.status === 'rejected') {
+        throw protectedDataResult.reason
+      }
+
+      if (exchangeRateResult.status === 'rejected') {
+        setExchangeRateError(
+          exchangeRateResult.reason instanceof Error
+            ? exchangeRateResult.reason.message
+            : 'No se pudo cargar el tipo de cambio del BCCR.',
+        )
+      }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'No se pudo cargar el panel.')
     } finally {
@@ -778,7 +853,22 @@ function App() {
     async function syncStoredSession() {
       try {
         setIsBusy(true)
-        await loadProtectedData(activeToken)
+        const [protectedDataResult, exchangeRateResult] = await Promise.allSettled([
+          loadProtectedData(activeToken),
+          loadExchangeRateDashboard(),
+        ])
+
+        if (protectedDataResult.status === 'rejected') {
+          throw protectedDataResult.reason
+        }
+
+        if (exchangeRateResult.status === 'rejected') {
+          setExchangeRateError(
+            exchangeRateResult.reason instanceof Error
+              ? exchangeRateResult.reason.message
+              : 'No se pudo cargar el tipo de cambio del BCCR.',
+          )
+        }
       } catch {
         setStatusMessage('La sesion guardada ya no es valida. Inicia sesion de nuevo.')
         localStorage.removeItem('elatilo_token')
@@ -1337,6 +1427,10 @@ function App() {
 
   function openAccountsDashboard() {
     setActiveDashboard('accounts')
+  }
+
+  function openExchangeDashboard() {
+    setActiveDashboard('exchange')
   }
 
   function handleProjectFilterChange(filter: 'active' | 'all' | 'archived') {
@@ -2160,6 +2254,16 @@ function App() {
                 <span>{t('menu.accounts')}</span>
               </span>
             </button>
+            <button
+              className={`tab-btn ${activeDashboard === 'exchange' ? 'active' : ''}`}
+              type="button"
+              onClick={openExchangeDashboard}
+            >
+              <span className="button-with-icon">
+                <HiOutlineDocumentText aria-hidden="true" />
+                <span>{t('menu.exchange')}</span>
+              </span>
+            </button>
           </div>
           <div className="action-row">
             {activeDashboard === 'budget-detail' ? (
@@ -2185,7 +2289,11 @@ function App() {
           </div>
         </div>
 
-        {activeDashboard === 'home' || activeDashboard === 'budgets' || activeDashboard === 'budget-detail' || activeDashboard === 'accounts' ? null : (
+        {activeDashboard === 'home' ||
+        activeDashboard === 'budgets' ||
+        activeDashboard === 'budget-detail' ||
+        activeDashboard === 'accounts' ||
+        activeDashboard === 'exchange' ? null : (
           <div className="health-layout">
             <article className="health-card">
               <h3>
@@ -2859,6 +2967,15 @@ function App() {
                 </div>
               </aside>
             </section>
+          ) : activeDashboard === 'exchange' ? (
+            <ExchangeRateDashboard
+              data={exchangeRateDashboard}
+              error={exchangeRateError}
+              isLoading={isExchangeRateLoading}
+              onRefresh={() => {
+                void loadExchangeRateDashboard()
+              }}
+            />
           ) : activeDashboard === 'users' ? (
             <UsersDashboard
               users={users}
