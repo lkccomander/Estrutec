@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from html import unescape
 
 import httpx
@@ -27,15 +28,38 @@ _ENTITY_TYPES = (
     "Puestos de Bolsa",
 )
 
-_ROW_PATTERN = re.compile(
-    r"^(?P<label>.+?)\s+"
-    r"(?P<buy>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
-    r"(?P<sell>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
-    r"(?P<spread>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
-    r"(?P<updated_at>\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.)$"
-)
-_TIMESTAMP_PATTERN = re.compile(r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.$")
-_DECIMAL_PATTERN = re.compile(r"\d{1,3}(?:\.\d{3})*,\d{2}")
+_TIMESTAMP_PATTERN = re.compile(r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.", re.IGNORECASE)
+
+
+class _BccrTableParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.rows: list[list[str]] = []
+        self._current_row: list[str] | None = None
+        self._current_cell: list[str] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "tr":
+            self._current_row = []
+        elif tag in {"td", "th"} and self._current_row is not None:
+            self._current_cell = []
+        elif tag == "br" and self._current_cell is not None:
+            self._current_cell.append(" ")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"td", "th"} and self._current_row is not None and self._current_cell is not None:
+            cell_text = re.sub(r"\s+", " ", "".join(self._current_cell)).strip()
+            self._current_row.append(cell_text)
+            self._current_cell = None
+        elif tag == "tr" and self._current_row is not None:
+            normalized_row = [cell for cell in self._current_row if cell]
+            if normalized_row:
+                self.rows.append(normalized_row)
+            self._current_row = None
+
+    def handle_data(self, data: str) -> None:
+        if self._current_cell is not None:
+            self._current_cell.append(unescape(data))
 
 
 class ExchangeRateScrapingError(RuntimeError):
@@ -66,6 +90,13 @@ def _sanitize_html(raw_html: str) -> list[str]:
         for line in text.splitlines()
     ]
     return [line for line in normalized_lines if line]
+
+
+def _extract_table_rows(raw_html: str) -> list[list[str]]:
+    parser = _BccrTableParser()
+    parser.feed(raw_html)
+    parser.close()
+    return parser.rows
 
 
 def _normalize_label(value: str) -> str:
@@ -103,73 +134,77 @@ def _extract_report_date(lines: list[str]) -> str:
     raise ExchangeRateScrapingError("No se encontro la fecha del reporte del BCCR.")
 
 
-def _extract_rows(lines: list[str]) -> list[str]:
-    try:
-        header_index = next(
-            index
-            for index, line in enumerate(lines)
-            if "Tipo de Entidad" in line and "Entidad Autorizada" in line
+def _parse_entries_from_table(rows: list[list[str]]) -> list[ParsedExchangeRateEntry]:
+    entries: list[ParsedExchangeRateEntry] = []
+    current_entity_type = ""
+
+    header_found = False
+    for row in rows:
+        normalized_first_cell = _normalize_label(row[0]) if row else ""
+        if not header_found:
+            if any("Tipo de Entidad" in cell for cell in row) and any("Entidad Autorizada" in cell for cell in row):
+                header_found = True
+            continue
+
+        if normalized_first_cell == "Enlaces":
+            break
+
+        if len(row) < 6:
+            continue
+
+        entity_type_cell, entity_cell, buy_value, sell_value, spread_value, updated_at_value = row[:6]
+        entity_type = _normalize_label(entity_type_cell).strip() or current_entity_type
+        entity = entity_cell.strip()
+
+        if entity_type not in _ENTITY_TYPES or not entity or not _TIMESTAMP_PATTERN.search(updated_at_value):
+            continue
+
+        current_entity_type = entity_type
+        entries.append(
+            ParsedExchangeRateEntry(
+                entity_type=entity_type,
+                entity=entity,
+                buy_rate=_parse_decimal(buy_value),
+                sell_rate=_parse_decimal(sell_value),
+                spread=_parse_decimal(spread_value),
+                updated_at=_parse_timestamp(updated_at_value),
+            )
         )
-    except StopIteration as exc:
-        raise ExchangeRateScrapingError("No se encontro el encabezado de la tabla del BCCR.") from exc
 
-    try:
-        footer_index = next(index for index, line in enumerate(lines) if line == "Enlaces")
-    except StopIteration:
-        footer_index = len(lines)
+    if not entries:
+        raise ExchangeRateScrapingError("No se pudieron extraer filas de tipo de cambio del BCCR.")
 
-    return lines[header_index + 1 : footer_index]
+    return entries
 
 
-def _parse_entries(lines: list[str]) -> list[ParsedExchangeRateEntry]:
+def _parse_entries_from_lines(lines: list[str]) -> list[ParsedExchangeRateEntry]:
     entries: list[ParsedExchangeRateEntry] = []
     current_entity_type = ""
 
     for raw_line in lines:
         line = _normalize_label(raw_line)
-        match = _ROW_PATTERN.match(line)
-
-        if match:
-            label = match.group("label").strip()
-            buy_value = match.group("buy")
-            sell_value = match.group("sell")
-            spread_value = match.group("spread")
-            updated_at_value = match.group("updated_at")
-        else:
-            timestamp_match = _TIMESTAMP_PATTERN.search(line)
-            if not timestamp_match:
-                continue
-
-            updated_at_value = timestamp_match.group(0)
-            prefix = line[: timestamp_match.start()].strip()
-            decimal_matches = list(_DECIMAL_PATTERN.finditer(prefix))
-            if len(decimal_matches) < 3:
-                continue
-
-            buy_match, sell_match, spread_match = decimal_matches[-3:]
-            buy_value = buy_match.group(0)
-            sell_value = sell_match.group(0)
-            spread_value = spread_match.group(0)
-            label = prefix[: buy_match.start()].strip()
-
-        if not label:
+        timestamp_match = _TIMESTAMP_PATTERN.search(line)
+        if not timestamp_match:
             continue
 
+        updated_at_value = timestamp_match.group(0)
+        prefix = line[: timestamp_match.start()].strip()
+        numeric_parts = re.findall(r"\d{1,3}(?:\.\d{3})*,\d{2}", prefix)
+        if len(numeric_parts) < 3:
+            continue
+
+        buy_value, sell_value, spread_value = numeric_parts[-3:]
+        label = prefix[: prefix.rfind(buy_value)].strip()
         entity_type = next(
             (candidate for candidate in _ENTITY_TYPES if label.startswith(candidate)),
-            "",
+            current_entity_type,
         )
+        entity = label[len(entity_type) :].strip() if label.startswith(entity_type) else label
 
-        if entity_type:
-            entity = label[len(entity_type) :].strip()
-            current_entity_type = entity_type
-        else:
-            entity_type = current_entity_type
-            entity = label
-
-        if not entity_type:
+        if not entity_type or not entity:
             continue
 
+        current_entity_type = entity_type
         entries.append(
             ParsedExchangeRateEntry(
                 entity_type=entity_type,
@@ -198,7 +233,12 @@ def fetch_exchange_rate_dashboard() -> ExchangeRateDashboardRead:
 
     lines = _sanitize_html(response.text)
     report_date = _extract_report_date(lines)
-    entries = _parse_entries(_extract_rows(lines))
+    table_rows = _extract_table_rows(response.text)
+
+    try:
+        entries = _parse_entries_from_table(table_rows)
+    except ExchangeRateScrapingError:
+        entries = _parse_entries_from_lines(lines)
 
     best_buy = max(entries, key=lambda entry: entry.buy_rate)
     best_sell = min(entries, key=lambda entry: entry.sell_rate)
