@@ -215,7 +215,9 @@ Frontend deployment notes:
 
 - Railway config file: `frontend/railway.json`
 - Required Railway variable: `VITE_API_URL`
-- The frontend is built during deploy and served with `vite preview`
+- Set `VITE_API_URL` to your backend public URL, for example `https://your-backend.up.railway.app`
+- Add the frontend public URL to the backend `CORS_ORIGINS`, for example `https://your-frontend.up.railway.app`
+- The frontend is built during deploy and served from the custom Docker image
 
 ## Development Notes
 
