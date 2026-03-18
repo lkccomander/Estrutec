@@ -28,12 +28,10 @@ _ENTITY_TYPES = (
 )
 
 _ROW_PATTERN = re.compile(
-    r"^(?:(?P<entity_type>Bancos publicos|Bancos privados|Financieras|Mutuales de Vivienda|"
-    r"Cooperativas|Casas de Cambio|Puestos de Bolsa)\s+)?"
-    r"(?P<entity>.+?)\s+"
-    r"(?P<buy>\d{1,3}(?:,\d{3})*,\d{2})\s+"
-    r"(?P<sell>\d{1,3}(?:,\d{3})*,\d{2})\s+"
-    r"(?P<spread>\d{1,3}(?:,\d{3})*,\d{2})\s+"
+    r"^(?P<label>.+?)\s+"
+    r"(?P<buy>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
+    r"(?P<sell>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
+    r"(?P<spread>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
     r"(?P<updated_at>\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.)$"
 )
 
@@ -69,15 +67,22 @@ def _sanitize_html(raw_html: str) -> list[str]:
 
 
 def _normalize_label(value: str) -> str:
-    return (
-        value.replace("públicos", "publicos")
-        .replace("privados", "privados")
-        .replace("ó", "o")
-        .replace("í", "i")
-        .replace("á", "a")
-        .replace("é", "e")
-        .replace("ú", "u")
+    translation_table = str.maketrans(
+        {
+            "á": "a",
+            "é": "e",
+            "í": "i",
+            "ó": "o",
+            "ú": "u",
+            "Á": "A",
+            "É": "E",
+            "Í": "I",
+            "Ó": "O",
+            "Ú": "U",
+            "°": "°",
+        }
     )
+    return value.translate(translation_table)
 
 
 def _parse_decimal(value: str) -> float:
@@ -124,15 +129,26 @@ def _parse_entries(lines: list[str]) -> list[ParsedExchangeRateEntry]:
         if not match:
             continue
 
-        entity_type = match.group("entity_type") or current_entity_type
+        label = match.group("label").strip()
+        entity_type = next(
+            (candidate for candidate in _ENTITY_TYPES if label.startswith(candidate)),
+            "",
+        )
+
+        if entity_type:
+            entity = label[len(entity_type) :].strip()
+            current_entity_type = entity_type
+        else:
+            entity_type = current_entity_type
+            entity = label
+
         if not entity_type:
             continue
 
-        current_entity_type = entity_type
         entries.append(
             ParsedExchangeRateEntry(
                 entity_type=entity_type,
-                entity=match.group("entity").strip(),
+                entity=entity,
                 buy_rate=_parse_decimal(match.group("buy")),
                 sell_rate=_parse_decimal(match.group("sell")),
                 spread=_parse_decimal(match.group("spread")),
