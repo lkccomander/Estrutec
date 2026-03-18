@@ -1,21 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import en from './en.json'
 import es from './es.json'
-
-type Language = 'es' | 'en'
+import { I18nContext, type I18nContextValue, type Language } from './context'
 
 const messages = { es, en } as const
 
-type I18nContextValue = {
-  language: Language
-  setLanguage: (language: Language) => void
-  toggleLanguage: () => void
-  t: (key: string) => string
-}
-
 const STORAGE_KEY = 'elatilo_language'
-
-const I18nContext = createContext<I18nContextValue | null>(null)
 
 function getNestedValue(source: unknown, path: string): string | null {
   const result = path.split('.').reduce<unknown>((current, key) => {
@@ -51,15 +41,3 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
-
-export function useI18n() {
-  const context = useContext(I18nContext)
-
-  if (!context) {
-    throw new Error('useI18n must be used within I18nProvider')
-  }
-
-  return context
-}
-
-export type { Language }

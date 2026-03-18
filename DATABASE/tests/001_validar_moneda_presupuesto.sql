@@ -70,10 +70,10 @@ BEGIN
             v_usuario_id,
             'Prueba de validacion de moneda'
         );
-        RAISE EXCEPTION 'La aprobacion debio fallar por moneda incompatible';
+        RAISE EXCEPTION 'La aprobacion debio fallar por tipo de cambio faltante';
     EXCEPTION
         WHEN OTHERS THEN
-            IF POSITION('Moneda incompatible' IN SQLERRM) = 0 THEN
+            IF POSITION('Tipo de cambio requerido' IN SQLERRM) = 0 THEN
                 RAISE;
             END IF;
     END;

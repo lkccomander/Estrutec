@@ -11,7 +11,7 @@ import { IoBusinessOutline } from 'react-icons/io5'
 import { MdAttachFile, MdContentCopy, MdOutlineFileDownload, MdOutlinePayments } from 'react-icons/md'
 import './App.css'
 import { ActionFeedback } from './components/ActionFeedback'
-import { useI18n } from './i18n'
+import { useI18n } from './i18n/useI18n'
 import { IconsDashboard } from './modules/icons/IconsDashboard'
 import { ProjectBudgetsDashboard } from './modules/budgets/ProjectBudgetsDashboard'
 import { ProjectsDashboard } from './modules/projects/ProjectsDashboard'
@@ -134,12 +134,6 @@ type ActionFeedbackState = {
 }
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
-
-const currencyFormatter = new Intl.NumberFormat('es-CR', {
-  style: 'currency',
-  currency: 'CRC',
-  maximumFractionDigits: 2,
-})
 
 function formatMoney(amount: string, currency: Currency) {
   return new Intl.NumberFormat('es-CR', {
@@ -307,7 +301,6 @@ function App() {
   const [selectedUserId, setSelectedUserId] = useState('')
   const [projectHistoryOffset, setProjectHistoryOffset] = useState(0)
   const [hiddenProjectHistoryIds, setHiddenProjectHistoryIds] = useState<string[]>([])
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [statusMessage, setStatusMessage] = useState(
     'Conecta el frontend con tu API local y empieza a registrar gastos.',
   )
@@ -318,12 +311,6 @@ function App() {
   const [loginForm, setLoginForm] = useState({
     email: 'andres.admin@example.com',
     password: 'Admin123!',
-  })
-  const [registerForm, setRegisterForm] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    rol: 'REGISTRADOR' as Role,
   })
   const [budgetForm, setBudgetForm] = useState({
     proyecto_id: '',
@@ -380,15 +367,6 @@ function App() {
     rol: 'REGISTRADOR' as Role,
   })
   const [lastUpdate, setLastUpdate] = useState<string>('Sin sincronizar')
-  const filteredProjects = projects.filter((project) => {
-    if (projectFilter === 'active') {
-      return project.activo
-    }
-    if (projectFilter === 'archived') {
-      return !project.activo
-    }
-    return true
-  })
   const activeProjects = projects.filter((project) => project.activo)
   const activeBudgets = budgets.filter((budget) => budget.estado === 'ACTIVO')
   const activeBudgetIds = new Set(activeBudgets.map((budget) => budget.presupuesto_id))
@@ -795,12 +773,21 @@ function App() {
       return
     }
 
-    refreshDashboard(token).catch(() => {
-      setStatusMessage('La sesion guardada ya no es valida. Inicia sesion de nuevo.')
-      localStorage.removeItem('elatilo_token')
-      setToken(null)
-      setCurrentUser(null)
-    })
+    async function syncStoredSession() {
+      try {
+        setIsBusy(true)
+        await loadProtectedData(token)
+      } catch {
+        setStatusMessage('La sesion guardada ya no es valida. Inicia sesion de nuevo.')
+        localStorage.removeItem('elatilo_token')
+        setToken(null)
+        setCurrentUser(null)
+      } finally {
+        setIsBusy(false)
+      }
+    }
+
+    void syncStoredSession()
   }, [token])
 
   useEffect(() => {
@@ -1182,28 +1169,6 @@ function App() {
       showActionFeedback('login', 'Sesion iniciada correctamente.')
     } catch (error) {
       showActionFeedback('login', error instanceof Error ? error.message : 'No se pudo iniciar sesion.')
-    } finally {
-      setIsBusy(false)
-    }
-  }
-
-  async function handleRegister(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    try {
-      setIsBusy(true)
-      const response = await request<AuthResponse>('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(registerForm),
-      })
-      localStorage.setItem('elatilo_token', response.access_token)
-      setToken(response.access_token)
-      showActionFeedback('register', 'Usuario creado e iniciado correctamente.')
-    } catch (error) {
-      showActionFeedback(
-        'register',
-        error instanceof Error ? error.message : 'No se pudo registrar el usuario.',
-      )
     } finally {
       setIsBusy(false)
     }
