@@ -51,6 +51,8 @@ type Project = {
   nombre_proyecto: string
   fecha_inicio_proyecto: string
   fecha_fin_proyecto?: string | null
+  latitud?: string | null
+  longitud?: string | null
   activo: boolean
   presupuesto_proyecto: string
   balance_proyecto: string
@@ -304,6 +306,7 @@ function App() {
   const [selectedReceiptId, setSelectedReceiptId] = useState('')
   const [selectedUserId, setSelectedUserId] = useState('')
   const [projectHistoryOffset, setProjectHistoryOffset] = useState(0)
+  const [hiddenProjectHistoryIds, setHiddenProjectHistoryIds] = useState<string[]>([])
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [statusMessage, setStatusMessage] = useState(
     'Conecta el frontend con tu API local y empieza a registrar gastos.',
@@ -339,6 +342,8 @@ function App() {
     nombre_proyecto: '',
     fecha_inicio_proyecto: new Date().toISOString().slice(0, 10),
     fecha_fin_proyecto: '',
+    latitud: '',
+    longitud: '',
   })
   const [receiptForm, setReceiptForm] = useState({
     presupuesto_id: '',
@@ -427,6 +432,7 @@ function App() {
         .reduce((sum, receipt) => sum + Number(receipt.monto_presupuesto ?? 0), 0)
       const initialBalance = Math.max(total - totalCashbox, 0)
       let runningBalance = initialBalance
+      let runningTotal = initialBalance
       const history = approvedProjectReceipts.map((receipt) => {
         const amount = Number(receipt.monto_presupuesto ?? 0)
         runningBalance =
@@ -437,6 +443,18 @@ function App() {
         return {
           date: receipt.fecha,
           balance: runningBalance,
+        }
+      })
+      const totalHistory = approvedProjectReceipts.map((receipt) => {
+        const amount = Number(receipt.monto_presupuesto ?? 0)
+
+        if (receipt.tipo_comprobante === 'CAJA_CHICA') {
+          runningTotal += amount
+        }
+
+        return {
+          date: receipt.fecha,
+          total: runningTotal,
         }
       })
 
@@ -452,6 +470,7 @@ function App() {
         canAggregateMoney,
         expenseHistory,
         history,
+        totalHistory,
       }
     })
     .filter((project) => project.budgetCount > 0)
@@ -490,6 +509,44 @@ function App() {
       path: describeDonutArc(132, 132, 104, 60, startAngle, endAngle),
     }
   })
+  const costaRicaBounds = {
+    minLat: 8.0,
+    maxLat: 11.3,
+    minLng: -85.95,
+    maxLng: -82.45,
+  }
+  const costaRicaMapFrame = {
+    left: 14,
+    top: 10,
+    width: 72,
+    height: 82,
+  }
+  const costaRicaMapImageUrl = 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mapa%20CR.svg'
+  const projectMapMarkers = activeProjects.flatMap((project) => {
+      const latitude = Number(project.latitud)
+      const longitude = Number(project.longitud)
+
+      if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+        return []
+      }
+
+      const normalizedX =
+        (longitude - costaRicaBounds.minLng) / (costaRicaBounds.maxLng - costaRicaBounds.minLng)
+      const normalizedY =
+        (costaRicaBounds.maxLat - latitude) / (costaRicaBounds.maxLat - costaRicaBounds.minLat)
+      const matchingSegment = projectDonutSegments.find((item) => item.projectId === project.proyecto_id)
+
+      return [{
+        projectId: project.proyecto_id,
+        name: project.nombre_proyecto,
+        xPercent: costaRicaMapFrame.left + normalizedX * costaRicaMapFrame.width,
+        yPercent: costaRicaMapFrame.top + normalizedY * costaRicaMapFrame.height,
+        color: matchingSegment?.color ?? '#38bdf8',
+        total: Number(project.presupuesto_proyecto),
+        latitud: latitude,
+        longitud: longitude,
+      }]
+    })
   const localTransferDetails = {
     title: t('transfer.title'),
     clientName: 'EDWIN FERNANDO PEREZ ALVARADO',
@@ -667,6 +724,14 @@ function App() {
         fecha_fin_proyecto:
           current.fecha_fin_proyecto ||
           projectList.find((project) => project.proyecto_id === nextProjectId)?.fecha_fin_proyecto ||
+          '',
+        latitud:
+          current.latitud ||
+          projectList.find((project) => project.proyecto_id === nextProjectId)?.latitud ||
+          '',
+        longitud:
+          current.longitud ||
+          projectList.find((project) => project.proyecto_id === nextProjectId)?.longitud ||
           '',
       }))
       setStatusMessage(`Sesion iniciada como ${me.nombre}.`)
@@ -1231,6 +1296,8 @@ function App() {
           body: JSON.stringify({
             ...projectForm,
             fecha_fin_proyecto: projectForm.fecha_fin_proyecto || null,
+            latitud: projectForm.latitud ? Number(projectForm.latitud) : null,
+            longitud: projectForm.longitud ? Number(projectForm.longitud) : null,
           }),
         },
         token,
@@ -1239,6 +1306,8 @@ function App() {
         nombre_proyecto: '',
         fecha_inicio_proyecto: new Date().toISOString().slice(0, 10),
         fecha_fin_proyecto: '',
+        latitud: '',
+        longitud: '',
       })
       setSelectedProjectId(project.proyecto_id)
       setBudgetForm((current) => ({
@@ -1265,6 +1334,8 @@ function App() {
       nombre_proyecto: project.nombre_proyecto,
       fecha_inicio_proyecto: project.fecha_inicio_proyecto,
       fecha_fin_proyecto: project.fecha_fin_proyecto ?? '',
+      latitud: project.latitud ?? '',
+      longitud: project.longitud ?? '',
     })
     setBudgetForm((current) => ({
       ...current,
@@ -1326,6 +1397,8 @@ function App() {
           body: JSON.stringify({
             ...projectForm,
             fecha_fin_proyecto: projectForm.fecha_fin_proyecto || null,
+            latitud: projectForm.latitud ? Number(projectForm.latitud) : null,
+            longitud: projectForm.longitud ? Number(projectForm.longitud) : null,
           }),
         },
         token,
@@ -1804,6 +1877,7 @@ function App() {
     ...projectHistoryChartData.flatMap((project) => [
       project.initialBalance,
       ...project.history.map((point) => point.balance),
+      ...project.totalHistory.map((point) => point.total),
       ...project.expenseHistory.map((receipt) => Number(receipt.monto_presupuesto ?? 0)),
     ]),
     1,
@@ -1868,6 +1942,43 @@ function App() {
       totalExpenses: runningExpenses,
     }
   })
+  const projectTotalSeriesPaths = projectHistoryChartData.map((project, projectIndex) => {
+    let currentTotal = project.initialBalance
+    const totalByDate = new Map(project.totalHistory.map((point) => [point.date, point.total]))
+    const points = projectHistoryDomain.map((date, index) => {
+      if (totalByDate.has(date)) {
+        currentTotal = totalByDate.get(date) ?? currentTotal
+      }
+
+      const x =
+        projectHistoryChartPadding.left +
+        (projectHistoryDomain.length === 1
+          ? projectHistoryChartInnerWidth / 2
+          : (projectHistoryChartInnerWidth / Math.max(projectHistoryDomain.length - 1, 1)) * index)
+      const y =
+        projectHistoryChartPadding.top +
+        projectHistoryChartInnerHeight -
+        (currentTotal / projectHistoryMaxValue) * projectHistoryChartInnerHeight
+
+      return { x, y, value: currentTotal, date }
+    })
+
+    return {
+      ...project,
+      color: projectHistoryColors[projectIndex % projectHistoryColors.length],
+      points,
+      path: buildLinePath(points),
+    }
+  })
+  const visibleProjectHistorySeriesPaths = projectHistorySeriesPaths.filter(
+    (project) => !hiddenProjectHistoryIds.includes(project.projectId),
+  )
+  const visibleProjectExpenseSeriesPaths = projectExpenseSeriesPaths.filter(
+    (project) => !hiddenProjectHistoryIds.includes(project.projectId),
+  )
+  const visibleProjectTotalSeriesPaths = projectTotalSeriesPaths.filter(
+    (project) => !hiddenProjectHistoryIds.includes(project.projectId),
+  )
 
   function showActionFeedback(target: string, message: string) {
     const tone = getStatusTone(message)
@@ -2519,16 +2630,29 @@ function App() {
                   <div className="project-area-chart-shell">
                     <div className="project-area-chart-header">
                       {projectHistorySeriesPaths.map((project) => (
-                        <span
+                        <button
                           key={project.projectId}
-                          className="project-area-chart-badge project-line-badge"
+                          className={`project-area-chart-badge project-line-badge ${
+                            hiddenProjectHistoryIds.includes(project.projectId) ? 'is-muted' : ''
+                          }`}
+                          type="button"
+                          onClick={() =>
+                            setHiddenProjectHistoryIds((current) =>
+                              current.includes(project.projectId)
+                                ? current.filter((id) => id !== project.projectId)
+                                : [...current, project.projectId],
+                            )
+                          }
                           style={{ borderColor: project.color, color: project.color }}
                         >
                           {project.name}
-                        </span>
+                        </button>
                       ))}
                       <span className="project-area-chart-badge project-expense-badge">
                         Gastos acumulados
+                      </span>
+                      <span className="project-area-chart-badge project-total-badge">
+                        Saldo total
                       </span>
                     </div>
 
@@ -2563,40 +2687,68 @@ function App() {
                         )
                       })}
 
-                      {projectHistorySeriesPaths.map((project) => (
+                      {visibleProjectHistorySeriesPaths.map((project) => (
                         <g key={project.projectId}>
                           <path
                             className="project-history-line"
                             d={project.path}
                             style={{ stroke: project.color }}
                           />
-                          {project.points.map((point) => (
+                          {project.points.map((point, pointIndex) => (
                             <circle
                               key={`${project.projectId}-${point.date}`}
                               className="project-history-point"
                               cx={point.x}
                               cy={point.y}
                               r="3.5"
-                              style={{ fill: project.color }}
+                              style={{
+                                fill: project.color,
+                                animationDelay: `${0.18 + pointIndex * 0.06}s`,
+                              }}
                             />
                           ))}
                         </g>
                       ))}
-                      {projectExpenseSeriesPaths.map((project) => (
+                      {visibleProjectTotalSeriesPaths.map((project) => (
+                        <g key={`${project.projectId}-total`}>
+                          <path
+                            className="project-total-line"
+                            d={project.path}
+                            style={{ stroke: '#fbbf24' }}
+                          />
+                          {project.points.map((point, pointIndex) => (
+                            <circle
+                              key={`${project.projectId}-total-${point.date}`}
+                              className="project-total-point"
+                              cx={point.x}
+                              cy={point.y}
+                              r="2.6"
+                              style={{
+                                fill: '#fbbf24',
+                                animationDelay: `${0.24 + pointIndex * 0.06}s`,
+                              }}
+                            />
+                          ))}
+                        </g>
+                      ))}
+                      {visibleProjectExpenseSeriesPaths.map((project) => (
                         <g key={`${project.projectId}-expenses`}>
                           <path
                             className="project-expense-line"
                             d={project.path}
                             style={{ stroke: '#ef4444' }}
                           />
-                          {project.points.map((point) => (
+                          {project.points.map((point, pointIndex) => (
                             <circle
                               key={`${project.projectId}-expense-${point.date}`}
                               className="project-expense-point"
                               cx={point.x}
                               cy={point.y}
                               r="2.6"
-                              style={{ fill: '#ef4444' }}
+                              style={{
+                                fill: '#ef4444',
+                                animationDelay: `${0.28 + pointIndex * 0.06}s`,
+                              }}
                             />
                           ))}
                         </g>
@@ -2625,7 +2777,20 @@ function App() {
 
                     <div className="project-area-chart-footer">
                       {projectHistoryChartData.map((project) => (
-                        <article key={project.projectId} className="project-area-stat">
+                        <button
+                          key={project.projectId}
+                          className={`project-area-stat ${
+                            hiddenProjectHistoryIds.includes(project.projectId) ? 'is-muted' : ''
+                          }`}
+                          type="button"
+                          onClick={() =>
+                            setHiddenProjectHistoryIds((current) =>
+                              current.includes(project.projectId)
+                                ? current.filter((id) => id !== project.projectId)
+                                : [...current, project.projectId],
+                            )
+                          }
+                        >
                           <h4>{project.name}</h4>
                           <p>Saldo inicial {formatMoney(project.initialBalance.toFixed(2), project.currency)}</p>
                           <p>Disponible {formatMoney(project.available.toFixed(2), project.currency)}</p>
@@ -2639,7 +2804,7 @@ function App() {
                             )}
                           </p>
                           <p>{project.receiptsCount} comprobantes</p>
-                        </article>
+                        </button>
                       ))}
                     </div>
 
@@ -2706,6 +2871,64 @@ function App() {
                   </div>
                 ) : (
                   <p className="empty">No hay proyectos activos con presupuesto total para representar en la dona.</p>
+                )}
+              </article>
+
+              <article className="card project-map-card">
+                <div className="section-title">
+                  <div>
+                    <h2>Mapa de proyectos en Costa Rica</h2>
+                    <p className="muted">
+                      Ubicaciones de proyectos activos segun sus coordenadas registradas.
+                    </p>
+                  </div>
+                </div>
+
+                {projectMapMarkers.length ? (
+                  <div className="project-map-layout">
+                    <div className="project-map-wrap">
+                      <div className="project-map-canvas" role="img" aria-label="Mapa de Costa Rica con proyectos">
+                        <img
+                          className="project-map-image"
+                          src={costaRicaMapImageUrl}
+                          alt="Mapa de Costa Rica"
+                        />
+                        {projectMapMarkers.map((project) => (
+                          <span
+                            key={project.projectId}
+                            className="project-map-marker"
+                            style={{
+                              left: `${project.xPercent}%`,
+                              top: `${project.yPercent}%`,
+                              backgroundColor: project.color,
+                            }}
+                            title={`${project.name} (${project.latitud.toFixed(4)}, ${project.longitud.toFixed(4)})`}
+                          >
+                            <span className="project-map-marker-core" />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="project-map-legend">
+                      {projectMapMarkers.map((project) => (
+                        <article key={project.projectId} className="project-map-item">
+                          <span
+                            className="project-map-swatch"
+                            style={{ backgroundColor: project.color }}
+                            aria-hidden="true"
+                          />
+                          <div>
+                            <h4>{project.name}</h4>
+                            <p>{project.latitud.toFixed(4)}, {project.longitud.toFixed(4)}</p>
+                            <p>{formatMoney(project.total.toFixed(2), 'CRC')}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="empty">No hay proyectos activos con coordenadas para mostrar en el mapa.</p>
                 )}
               </article>
             </section>

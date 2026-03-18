@@ -14,6 +14,8 @@ class ProjectRepository:
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,
@@ -32,18 +34,24 @@ class ProjectRepository:
                 INSERT INTO t_proyectos (
                     nombre_proyecto,
                     fecha_inicio_proyecto,
-                    fecha_fin_proyecto
+                    fecha_fin_proyecto,
+                    latitud,
+                    longitud
                 )
                 VALUES (
                     %(nombre_proyecto)s,
                     %(fecha_inicio_proyecto)s,
-                    %(fecha_fin_proyecto)s
+                    %(fecha_fin_proyecto)s,
+                    %(latitud)s,
+                    %(longitud)s
                 )
                 RETURNING
                     proyecto_id,
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,
@@ -68,6 +76,8 @@ class ProjectRepository:
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,
@@ -89,6 +99,8 @@ class ProjectRepository:
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,
@@ -105,7 +117,7 @@ class ProjectRepository:
         if not payload:
             return self.get_project(project_id)
 
-        allowed_fields = {"nombre_proyecto", "fecha_inicio_proyecto", "fecha_fin_proyecto"}
+        allowed_fields = {"nombre_proyecto", "fecha_inicio_proyecto", "fecha_fin_proyecto", "latitud", "longitud"}
         fields = []
         values = []
         for key, value in payload.items():
@@ -128,6 +140,8 @@ class ProjectRepository:
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,
@@ -157,6 +171,8 @@ class ProjectRepository:
                     nombre_proyecto,
                     fecha_inicio_proyecto,
                     fecha_fin_proyecto,
+                    latitud,
+                    longitud,
                     activo,
                     presupuesto_proyecto,
                     balance_proyecto,

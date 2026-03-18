@@ -729,12 +729,23 @@ h2 {
 
 .project-line-badge {
   background: rgba(15, 23, 42, 0.62);
+  cursor: pointer;
+}
+
+.project-line-badge.is-muted {
+  opacity: 0.42;
 }
 
 .project-expense-badge {
   background: rgba(244, 63, 94, 0.16);
   border-color: rgba(244, 63, 94, 0.45);
   color: #fda4af;
+}
+
+.project-total-badge {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.42);
+  color: #fcd34d;
 }
 
 .project-area-chart {
@@ -759,11 +770,17 @@ h2 {
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawHistoryLine 3s ease forwards;
 }
 
 .project-history-point {
   stroke: rgba(15, 23, 42, 0.95);
   stroke-width: 2;
+  opacity: 0;
+  transform-origin: center;
+  animation: revealHistoryPoint 220ms ease forwards;
 }
 
 .project-expense-line {
@@ -771,11 +788,54 @@ h2 {
   stroke-width: 2;
   stroke-linecap: round;
   opacity: 0.9;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawHistoryLine 3s ease forwards;
 }
 
 .project-expense-point {
   stroke: rgba(15, 23, 42, 0.9);
   stroke-width: 1.5;
+  opacity: 0;
+  transform-origin: center;
+  animation: revealHistoryPoint 220ms ease forwards;
+}
+
+.project-total-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.95;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawHistoryLine 3s ease forwards;
+}
+
+.project-total-point {
+  stroke: rgba(15, 23, 42, 0.92);
+  stroke-width: 1.5;
+  opacity: 0;
+  transform-origin: center;
+  animation: revealHistoryPoint 220ms ease forwards;
+}
+
+@keyframes drawHistoryLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes revealHistoryPoint {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .project-area-chart-footer {
@@ -789,6 +849,10 @@ h2 {
   border-radius: 12px;
   border: 1px solid #23324b;
   background: rgba(15, 23, 42, 0.72);
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .project-area-stat h4,
@@ -805,6 +869,10 @@ h2 {
 .project-area-stat p {
   color: #cbd5e1;
   font-size: 0.82rem;
+}
+
+.project-area-stat.is-muted {
+  opacity: 0.48;
 }
 
 .project-area-note {
@@ -896,6 +964,109 @@ h2 {
 }
 
 .project-donut-item p {
+  color: #94a3b8;
+  font-size: 0.84rem;
+}
+
+.project-map-card {
+  margin-top: 14px;
+}
+
+.project-map-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(240px, 0.8fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.project-map-wrap {
+  border-radius: 18px;
+  border: 1px solid #23324b;
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.76));
+  padding: 14px;
+}
+
+.project-map-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 707 / 649;
+}
+
+.project-map-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  opacity: 0.9;
+  filter:
+    grayscale(0.18)
+    saturate(0.78)
+    brightness(0.92)
+    contrast(1.04);
+}
+
+.project-map-marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 3px solid rgba(15, 23, 42, 0.92);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(15, 23, 42, 0.24);
+  display: grid;
+  place-items: center;
+}
+
+.project-map-marker-core {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.project-map-legend {
+  display: grid;
+  gap: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #23324b;
+}
+
+.project-map-item {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.72);
+  border-top: 1px solid rgba(51, 65, 85, 0.65);
+}
+
+.project-map-item:first-child {
+  border-top: 0;
+}
+
+.project-map-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  margin-top: 4px;
+}
+
+.project-map-item h4,
+.project-map-item p {
+  margin: 0;
+}
+
+.project-map-item h4 {
+  color: #f8fafc;
+  font-size: 0.96rem;
+  margin-bottom: 4px;
+}
+
+.project-map-item p {
   color: #94a3b8;
   font-size: 0.84rem;
 }
@@ -1740,6 +1911,34 @@ body.light-theme .project-donut-item p {
   color: #475569;
 }
 
+body.light-theme .project-map-wrap {
+  border-color: rgba(100, 116, 139, 0.28);
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(241, 245, 249, 0.96), rgba(226, 232, 240, 0.92));
+}
+
+body.light-theme .project-map-marker {
+  border-color: rgba(241, 245, 249, 0.96);
+}
+
+body.light-theme .project-map-legend {
+  border-color: rgba(100, 116, 139, 0.28);
+}
+
+body.light-theme .project-map-item {
+  background: rgba(241, 245, 249, 0.88);
+  border-top-color: rgba(148, 163, 184, 0.35);
+}
+
+body.light-theme .project-map-item h4 {
+  color: #0f172a;
+}
+
+body.light-theme .project-map-item p {
+  color: #475569;
+}
+
 @media (max-width: 900px) {
   .container {
     padding: 24px 16px;
@@ -1757,7 +1956,8 @@ body.light-theme .project-donut-item p {
   .panel-grid,
   .world-clocks,
   .form-grid.two-columns,
-  .project-donut-layout {
+  .project-donut-layout,
+  .project-map-layout {
     grid-template-columns: 1fr;
   }
 

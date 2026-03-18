@@ -1,0 +1,9 @@
+BEGIN;
+
+ALTER TABLE t_proyectos
+ADD COLUMN IF NOT EXISTS latitud NUMERIC(9,6);
+
+ALTER TABLE t_proyectos
+ADD COLUMN IF NOT EXISTS longitud NUMERIC(9,6);
+
+COMMIT;

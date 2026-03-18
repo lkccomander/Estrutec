@@ -8,6 +8,8 @@ type Project = {
   nombre_proyecto: string
   fecha_inicio_proyecto: string
   fecha_fin_proyecto?: string | null
+  latitud?: string | null
+  longitud?: string | null
   activo: boolean
   presupuesto_proyecto: string
   balance_proyecto: string
@@ -17,6 +19,8 @@ type ProjectForm = {
   nombre_proyecto: string
   fecha_inicio_proyecto: string
   fecha_fin_proyecto: string
+  latitud: string
+  longitud: string
 }
 
 type FeedbackTone = 'warning' | 'success' | 'info'
@@ -125,6 +129,24 @@ export function ProjectsDashboard({
               onChange={(event) => onProjectFormChange({ fecha_fin_proyecto: event.target.value })}
             />
           </label>
+          <label className="field">
+            <span>Latitud</span>
+            <input
+              className="input"
+              value={projectForm.latitud}
+              onChange={(event) => onProjectFormChange({ latitud: event.target.value })}
+              placeholder="9.9281"
+            />
+          </label>
+          <label className="field">
+            <span>Longitud</span>
+            <input
+              className="input"
+              value={projectForm.longitud}
+              onChange={(event) => onProjectFormChange({ longitud: event.target.value })}
+              placeholder="-84.0907"
+            />
+          </label>
           <div className="field">
             <span>&nbsp;</span>
             <button className="sync-btn" type="submit" disabled={isBusy}>
@@ -185,6 +207,24 @@ export function ProjectsDashboard({
               type="date"
               value={projectForm.fecha_fin_proyecto}
               onChange={(event) => onProjectFormChange({ fecha_fin_proyecto: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Latitud</span>
+            <input
+              className="input"
+              value={projectForm.latitud}
+              onChange={(event) => onProjectFormChange({ latitud: event.target.value })}
+              placeholder="9.9281"
+            />
+          </label>
+          <label className="field">
+            <span>Longitud</span>
+            <input
+              className="input"
+              value={projectForm.longitud}
+              onChange={(event) => onProjectFormChange({ longitud: event.target.value })}
+              placeholder="-84.0907"
             />
           </label>
           <div className="field">

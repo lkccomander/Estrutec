@@ -30,6 +30,8 @@ class ProjectBase(BaseModel):
     nombre_proyecto: str
     fecha_inicio_proyecto: date
     fecha_fin_proyecto: date | None = None
+    latitud: Decimal | None = None
+    longitud: Decimal | None = None
 
 
 class ProjectCreate(ProjectBase):
@@ -51,6 +53,8 @@ class ProjectUpdate(BaseModel):
     nombre_proyecto: str | None = None
     fecha_inicio_proyecto: date | None = None
     fecha_fin_proyecto: date | None = None
+    latitud: Decimal | None = None
+    longitud: Decimal | None = None
 
 
 class BudgetBase(BaseModel):

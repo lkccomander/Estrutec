@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS t_proyectos (
     nombre_proyecto VARCHAR(180) NOT NULL UNIQUE,
     fecha_inicio_proyecto DATE NOT NULL,
     fecha_fin_proyecto DATE NULL,
+    latitud NUMERIC(9,6) NULL,
+    longitud NUMERIC(9,6) NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     presupuesto_proyecto NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (presupuesto_proyecto >= 0),
     balance_proyecto NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (balance_proyecto >= 0),
@@ -93,6 +95,12 @@ CREATE TABLE IF NOT EXISTS t_proyectos (
 
 ALTER TABLE t_proyectos
 ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE t_proyectos
+ADD COLUMN IF NOT EXISTS latitud NUMERIC(9,6);
+
+ALTER TABLE t_proyectos
+ADD COLUMN IF NOT EXISTS longitud NUMERIC(9,6);
 
 DO $$
 DECLARE
