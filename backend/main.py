@@ -17,9 +17,26 @@ from app.config import settings
 from app.db.connection import get_database_url
 
 
-def _run_startup_migrations() -> None:
+def _resolve_database_dir() -> Path:
     backend_dir = Path(__file__).resolve().parent
-    database_dir = backend_dir.parent / "DATABASE"
+    candidates = [
+        backend_dir / "DATABASE",
+        backend_dir.parent / "DATABASE",
+    ]
+
+    for candidate in candidates:
+        if (candidate / "DB.SQL").exists() and (candidate / "migrations").is_dir():
+            return candidate
+
+    searched_paths = ", ".join(str(path) for path in candidates)
+    raise FileNotFoundError(
+        "No se encontro DATABASE/ con DB.SQL y migrations/. "
+        f"Rutas revisadas: {searched_paths}"
+    )
+
+
+def _run_startup_migrations() -> None:
+    database_dir = _resolve_database_dir()
     baseline_sql = database_dir / "DB.SQL"
     migrations_dir = database_dir / "migrations"
 
