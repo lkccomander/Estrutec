@@ -108,6 +108,9 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description="API para gestion de presupuestos y comprobantes de gastos.",
+        docs_url=None if settings.is_prod else "/docs",
+        redoc_url=None if settings.is_prod else "/redoc",
+        openapi_url=None if settings.is_prod else "/openapi.json",
     )
 
     @app.exception_handler(RequestValidationError)
