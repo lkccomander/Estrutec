@@ -17,6 +17,8 @@ from app.api.routes.receipts import router as receipts_router
 from app.api.routes.users import router as users_router
 from app.config import settings
 from app.db.connection import get_database_url
+from app.middleware.rate_limit import RateLimitMiddleware, RateLimitRule
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 
 def _resolve_database_dir() -> Path:
@@ -132,6 +134,37 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(
+        RateLimitMiddleware,
+        trust_proxy_headers=settings.trusted_proxy_headers,
+        rules=[
+            RateLimitRule(
+                path="/",
+                methods=("GET",),
+                max_requests=settings.rate_limit_public_max_requests,
+                window_seconds=settings.rate_limit_window_seconds,
+            ),
+            RateLimitRule(
+                path="/health",
+                methods=("GET",),
+                max_requests=settings.rate_limit_public_max_requests,
+                window_seconds=settings.rate_limit_window_seconds,
+            ),
+            RateLimitRule(
+                path="/auth/login",
+                methods=("POST",),
+                max_requests=settings.rate_limit_auth_max_requests,
+                window_seconds=settings.rate_limit_window_seconds,
+            ),
+            RateLimitRule(
+                path="/auth/register",
+                methods=("POST",),
+                max_requests=settings.rate_limit_auth_max_requests,
+                window_seconds=settings.rate_limit_window_seconds,
+            ),
+        ],
     )
     app.add_event_handler("startup", _run_startup_migrations)
     app.include_router(health_router)

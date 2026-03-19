@@ -31,6 +31,15 @@ class Settings(BaseModel):
         ).split(",")
         if origin.strip()
     ]
+    rate_limit_window_seconds: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+    rate_limit_public_max_requests: int = int(os.getenv("RATE_LIMIT_PUBLIC_MAX_REQUESTS", "60"))
+    rate_limit_auth_max_requests: int = int(os.getenv("RATE_LIMIT_AUTH_MAX_REQUESTS", "5"))
+    trusted_proxy_headers: bool = os.getenv("TRUSTED_PROXY_HEADERS", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     @property
     def is_prod(self) -> bool:
