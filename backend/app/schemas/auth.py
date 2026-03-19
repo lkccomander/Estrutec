@@ -3,12 +3,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.schemas.roles import UserRole
+
 
 class RegisterRequest(BaseModel):
     nombre: str
     email: str
     password: str = Field(min_length=8, max_length=128)
-    rol: str = "REGISTRADOR"
+    rol: UserRole | None = None
 
 
 class LoginRequest(BaseModel):
@@ -25,7 +27,7 @@ class CurrentUser(BaseModel):
     usuario_id: UUID
     nombre: str
     email: str
-    rol: str
+    rol: UserRole
     activo: bool
     created_at: datetime
 

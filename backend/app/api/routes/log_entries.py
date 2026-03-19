@@ -9,10 +9,10 @@ router = APIRouter(prefix="/log", tags=["log"])
 
 @router.get("", response_model=list[LogEntryRead], summary="Listar mensajes del log")
 def list_log_entries(
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: LogEntryService = Depends(get_log_entry_service),
 ) -> list[LogEntryRead]:
-    return service.list_entries()
+    return service.list_entries(current_user)
 
 
 @router.post(

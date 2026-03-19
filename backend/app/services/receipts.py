@@ -1,28 +1,90 @@
 from fastapi import HTTPException, status
 
 from app.repositories.receipts import ReceiptRepository
+from app.schemas.roles import UserRole
 
 
 class ReceiptService:
     def __init__(self, repository: ReceiptRepository):
         self._repository = repository
 
-    def list_receipts(self) -> list[dict]:
-        return self._repository.list_receipts()
+    def _is_privileged(self, current_user: dict) -> bool:
+        return current_user["rol"] in {UserRole.ADMIN.value, UserRole.APROBADOR.value}
 
-    def create_receipt(self, payload: dict) -> dict:
+    def _get_receipt_or_404(self, receipt_id: str) -> dict:
+        receipt = self._repository.get_receipt(receipt_id)
+        if not receipt:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Comprobante no encontrado",
+            )
+        return receipt
+
+    def _ensure_can_view_receipt(self, receipt: dict, current_user: dict) -> None:
+        if self._is_privileged(current_user):
+            return
+
+        if str(receipt["usuario_creador_id"]) == str(current_user["usuario_id"]):
+            return
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para acceder a este comprobante",
+        )
+
+    def _ensure_can_manage_receipt(self, receipt: dict, current_user: dict) -> None:
+        if current_user["rol"] == UserRole.ADMIN.value:
+            return
+
+        if str(receipt["usuario_creador_id"]) == str(current_user["usuario_id"]):
+            return
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para modificar este comprobante",
+        )
+
+    def list_receipts(self, current_user: dict) -> list[dict]:
+        if self._is_privileged(current_user):
+            return self._repository.list_receipts()
+        return self._repository.list_receipts_by_creator(str(current_user["usuario_id"]))
+
+    def create_receipt(self, payload: dict, current_user: dict) -> dict:
+        payload["usuario_creador_id"] = str(current_user["usuario_id"])
         return self._repository.create_receipt(payload)
 
-    def get_receipt(self, receipt_id: str) -> dict | None:
-        return self._repository.get_receipt(receipt_id)
+    def get_receipt(self, receipt_id: str, current_user: dict) -> dict:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_view_receipt(receipt, current_user)
+        return receipt
 
-    def update_receipt(self, receipt_id: str, payload: dict) -> dict | None:
+    def update_receipt(self, receipt_id: str, payload: dict, current_user: dict) -> dict | None:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_manage_receipt(receipt, current_user)
         return self._repository.update_receipt(receipt_id, payload)
 
-    def delete_receipt(self, receipt_id: str) -> bool:
+    def delete_receipt(self, receipt_id: str, current_user: dict) -> bool:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_manage_receipt(receipt, current_user)
         return self._repository.delete_receipt(receipt_id)
 
-    def approve_receipt(self, receipt_id: str, approver_id: str, observacion: str | None) -> dict | None:
+    def approve_receipt(
+        self,
+        receipt_id: str,
+        approver_id: str,
+        approver_role: str,
+        observacion: str | None,
+    ) -> dict | None:
+        receipt = self._get_receipt_or_404(receipt_id)
+        if (
+            str(receipt["usuario_creador_id"]) == approver_id
+            and approver_role != UserRole.ADMIN.value
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No puedes aprobar un comprobante creado por tu propio usuario.",
+            )
+
         try:
             return self._repository.approve_receipt(receipt_id, approver_id, observacion)
         except Exception as exc:
@@ -70,6 +132,13 @@ class ReceiptService:
             raise
 
     def reject_receipt(self, receipt_id: str, approver_id: str, observacion: str | None) -> dict | None:
+        receipt = self._get_receipt_or_404(receipt_id)
+        if str(receipt["usuario_creador_id"]) == approver_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No puedes rechazar un comprobante creado por tu propio usuario.",
+            )
+
         try:
             return self._repository.reject_receipt(receipt_id, approver_id, observacion)
         except Exception as exc:
@@ -83,11 +152,17 @@ class ReceiptService:
 
             raise
 
-    def list_attachments(self, receipt_id: str) -> list[dict]:
+    def list_attachments(self, receipt_id: str, current_user: dict) -> list[dict]:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_view_receipt(receipt, current_user)
         return self._repository.list_attachments(receipt_id)
 
-    def create_attachment(self, receipt_id: str, payload: dict) -> dict:
+    def create_attachment(self, receipt_id: str, payload: dict, current_user: dict) -> dict:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_manage_receipt(receipt, current_user)
         return self._repository.create_attachment(receipt_id, payload)
 
-    def delete_attachment(self, receipt_id: str, attachment_id: str) -> bool:
+    def delete_attachment(self, receipt_id: str, attachment_id: str, current_user: dict) -> bool:
+        receipt = self._get_receipt_or_404(receipt_id)
+        self._ensure_can_manage_receipt(receipt, current_user)
         return self._repository.delete_attachment(receipt_id, attachment_id)

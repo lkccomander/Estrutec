@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_current_user, get_user_service, require_roles
+from app.api.dependencies import (
+    get_user_service,
+    require_roles,
+    require_self_or_roles,
+)
 from app.schemas.common import UserRead, UserUpdate
 from app.services.users import UserService
 
@@ -9,7 +13,7 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 @router.get("", response_model=list[UserRead], summary="Listar usuarios")
 def list_users(
-    _: dict = Depends(get_current_user),
+    _: dict = Depends(require_roles("ADMIN")),
     service: UserService = Depends(get_user_service),
 ) -> list[UserRead]:
     return service.list_users()
@@ -18,7 +22,7 @@ def list_users(
 @router.get("/{usuario_id}", response_model=UserRead, summary="Detalle de usuario")
 def get_user(
     usuario_id: str,
-    _: dict = Depends(get_current_user),
+    _: dict = Depends(require_self_or_roles("ADMIN")),
     service: UserService = Depends(get_user_service),
 ) -> UserRead:
     user = service.get_user(usuario_id)

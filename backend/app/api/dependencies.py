@@ -18,6 +18,7 @@ from app.services.receipts import ReceiptService
 from app.services.users import UserService
 
 bearer_scheme = HTTPBearer()
+optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_user_service(connection=Depends(get_db_connection)) -> UserService:
@@ -58,6 +59,17 @@ def get_current_user(
     return auth_service.get_current_user(user_id)
 
 
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> dict | None:
+    if not credentials or not credentials.credentials:
+        return None
+
+    user_id = decode_access_token(credentials.credentials)
+    return auth_service.get_current_user(user_id)
+
+
 def require_roles(*roles: str) -> Callable:
     def dependency(current_user: dict = Depends(get_current_user)) -> dict:
         if current_user["rol"] not in roles:
@@ -66,5 +78,21 @@ def require_roles(*roles: str) -> Callable:
                 detail="No tienes permisos para realizar esta accion",
             )
         return current_user
+
+    return dependency
+
+
+def require_self_or_roles(*roles: str) -> Callable:
+    def dependency(
+        usuario_id: str,
+        current_user: dict = Depends(get_current_user),
+    ) -> dict:
+        if current_user["rol"] in roles or str(current_user["usuario_id"]) == usuario_id:
+            return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para realizar esta accion",
+        )
 
     return dependency

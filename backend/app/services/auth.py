@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 
 from app.repositories.users import UserRepository
+from app.schemas.roles import UserRole
 from app.security import (
     create_access_token,
     hash_password,
@@ -13,7 +14,7 @@ class AuthService:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def register(self, payload: dict) -> dict:
+    def register(self, payload: dict, role: str | None = None) -> dict:
         existing_user = self._repository.get_by_email(payload["email"])
         if existing_user:
             raise HTTPException(
@@ -25,7 +26,7 @@ class AuthService:
             "nombre": payload["nombre"],
             "email": payload["email"],
             "password_hash": hash_password(payload["password"]),
-            "rol": payload["rol"],
+            "rol": role or UserRole.REGISTRADOR.value,
         }
         user = self._repository.create_user(user_to_create)
         token = create_access_token(str(user["usuario_id"]))
@@ -59,5 +60,10 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuario no encontrado",
+            )
+        if not user["activo"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="El usuario esta inactivo",
             )
         return user

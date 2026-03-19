@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_auth_service, get_current_user
+from app.api.dependencies import get_auth_service, get_current_user, get_optional_current_user
 from app.config import settings
+from app.schemas.roles import UserRole
 from app.schemas.auth import AuthResponse, CurrentUser, LoginRequest, RegisterRequest
 from app.services.auth import AuthService
 
@@ -17,10 +18,23 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 )
 def register(
     payload: RegisterRequest,
+    current_user: dict | None = Depends(get_optional_current_user),
     service: AuthService = Depends(get_auth_service),
 ) -> AuthResponse:
+    if current_user:
+        if current_user["rol"] != UserRole.ADMIN.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para crear usuarios",
+            )
+
+        return AuthResponse(
+            **service.register(payload.model_dump(), role=(payload.rol.value if payload.rol else None))
+        )
+
     if not settings.allow_public_registration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+
     return AuthResponse(**service.register(payload.model_dump()))
 
 

@@ -5,10 +5,8 @@ class ReceiptRepository:
     def __init__(self, connection):
         self._connection = connection
 
-    def list_receipts(self) -> list[dict]:
-        with self._connection.cursor(row_factory=dict_row) as cursor:
-            cursor.execute(
-                """
+    def _receipt_select_clause(self) -> str:
+        return """
                 SELECT
                     comprobante_id,
                     presupuesto_id,
@@ -44,6 +42,13 @@ class ReceiptRepository:
                     created_at,
                     updated_at
                 FROM comprobante
+        """
+
+    def list_receipts(self) -> list[dict]:
+        with self._connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute(
+                f"""
+                {self._receipt_select_clause()}
                 ORDER BY COALESCE(
                     (
                         SELECT mp.created_at
@@ -55,6 +60,27 @@ class ReceiptRepository:
                     created_at
                 ) DESC
                 """
+            )
+            return cursor.fetchall()
+
+    def list_receipts_by_creator(self, user_id: str) -> list[dict]:
+        with self._connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute(
+                f"""
+                {self._receipt_select_clause()}
+                WHERE usuario_creador_id = %s
+                ORDER BY COALESCE(
+                    (
+                        SELECT mp.created_at
+                        FROM movimiento_presupuesto mp
+                        WHERE mp.comprobante_id = comprobante.comprobante_id
+                        ORDER BY mp.created_at DESC
+                        LIMIT 1
+                    ),
+                    created_at
+                ) DESC
+                """,
+                (user_id,),
             )
             return cursor.fetchall()
 
@@ -153,6 +179,18 @@ class ReceiptRepository:
                     ) AS balance,
                     created_at,
                     updated_at
+                FROM comprobante
+                WHERE comprobante_id = %s
+                """,
+                (receipt_id,),
+            )
+            return cursor.fetchone()
+
+    def get_receipt_owner(self, receipt_id: str) -> dict | None:
+        with self._connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute(
+                """
+                SELECT comprobante_id, usuario_creador_id, usuario_aprobador_id, estado
                 FROM comprobante
                 WHERE comprobante_id = %s
                 """,

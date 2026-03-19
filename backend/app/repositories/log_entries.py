@@ -5,10 +5,8 @@ class LogEntryRepository:
     def __init__(self, connection):
         self._connection = connection
 
-    def list_entries(self) -> list[dict]:
-        with self._connection.cursor(row_factory=dict_row) as cursor:
-            cursor.execute(
-                """
+    def _log_entry_select_clause(self) -> str:
+        return """
                 SELECT
                     l.log_id,
                     l.mensaje,
@@ -18,8 +16,27 @@ class LogEntryRepository:
                     l.created_at
                 FROM log_entry l
                 JOIN usuario u ON u.usuario_id = l.usuario_id
+        """
+
+    def list_entries(self) -> list[dict]:
+        with self._connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute(
+                f"""
+                {self._log_entry_select_clause()}
                 ORDER BY l.created_at DESC
                 """
+            )
+            return cursor.fetchall()
+
+    def list_entries_by_user(self, user_id: str) -> list[dict]:
+        with self._connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute(
+                f"""
+                {self._log_entry_select_clause()}
+                WHERE l.usuario_id = %s
+                ORDER BY l.created_at DESC
+                """,
+                (user_id,),
             )
             return cursor.fetchall()
 

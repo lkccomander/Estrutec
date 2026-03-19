@@ -9,10 +9,10 @@ router = APIRouter(prefix="/comprobantes", tags=["comprobantes"])
 
 @router.get("", response_model=list[ReceiptWithBalanceRead], summary="Listar comprobantes")
 def list_receipts(
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> list[ReceiptWithBalanceRead]:
-    return service.list_receipts()
+    return service.list_receipts(current_user)
 
 
 @router.post(
@@ -23,32 +23,33 @@ def list_receipts(
 )
 def create_receipt(
     payload: ReceiptCreate,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> ReceiptRead:
-    return service.create_receipt(payload.model_dump(mode="json"))
+    return service.create_receipt(payload.model_dump(mode="json"), current_user)
 
 
 @router.get("/{comprobante_id}", response_model=ReceiptRead, summary="Detalle de comprobante")
 def get_receipt(
     comprobante_id: str,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> ReceiptRead:
-    receipt = service.get_receipt(comprobante_id)
-    if not receipt:
-        raise HTTPException(status_code=404, detail="Comprobante no encontrado")
-    return receipt
+    return service.get_receipt(comprobante_id, current_user)
 
 
 @router.patch("/{comprobante_id}", response_model=ReceiptRead, summary="Actualizar comprobante")
 def update_receipt(
     comprobante_id: str,
     payload: ReceiptUpdate,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> ReceiptRead:
-    receipt = service.update_receipt(comprobante_id, payload.model_dump(exclude_none=True, mode="json"))
+    receipt = service.update_receipt(
+        comprobante_id,
+        payload.model_dump(exclude_none=True, mode="json"),
+        current_user,
+    )
     if not receipt:
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
     return receipt
@@ -57,10 +58,10 @@ def update_receipt(
 @router.delete("/{comprobante_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar comprobante")
 def delete_receipt(
     comprobante_id: str,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> Response:
-    deleted = service.delete_receipt(comprobante_id)
+    deleted = service.delete_receipt(comprobante_id, current_user)
     if not deleted:
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -73,7 +74,12 @@ def approve_receipt(
     current_user: dict = Depends(require_roles("ADMIN", "APROBADOR")),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> ReceiptRead:
-    receipt = service.approve_receipt(comprobante_id, str(current_user["usuario_id"]), payload.observacion)
+    receipt = service.approve_receipt(
+        comprobante_id,
+        str(current_user["usuario_id"]),
+        str(current_user["rol"]),
+        payload.observacion,
+    )
     if not receipt:
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
     return receipt

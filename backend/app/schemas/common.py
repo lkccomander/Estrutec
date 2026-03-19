@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.roles import UserRole
+
 
 class APIMessage(BaseModel):
     message: str
@@ -15,14 +17,14 @@ class UserRead(BaseModel):
     usuario_id: UUID
     nombre: str
     email: str
-    rol: str
+    rol: UserRole
     activo: bool
     created_at: datetime
 
 
 class UserUpdate(BaseModel):
     nombre: str | None = None
-    rol: str | None = None
+    rol: UserRole | None = None
     activo: bool | None = None
 
 

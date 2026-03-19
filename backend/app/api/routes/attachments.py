@@ -10,10 +10,10 @@ router = APIRouter(prefix="/comprobantes/{comprobante_id}/adjuntos", tags=["adju
 @router.get("", response_model=list[AttachmentRead], summary="Listar adjuntos")
 def list_attachments(
     comprobante_id: str,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> list[AttachmentRead]:
-    return service.list_attachments(comprobante_id)
+    return service.list_attachments(comprobante_id, current_user)
 
 
 @router.post(
@@ -25,10 +25,10 @@ def list_attachments(
 def create_attachment(
     comprobante_id: str,
     payload: AttachmentCreate,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> AttachmentRead:
-    return service.create_attachment(comprobante_id, payload.model_dump())
+    return service.create_attachment(comprobante_id, payload.model_dump(), current_user)
 
 
 @router.delete(
@@ -39,10 +39,10 @@ def create_attachment(
 def delete_attachment(
     comprobante_id: str,
     adjunto_id: str,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ) -> Response:
-    deleted = service.delete_attachment(comprobante_id, adjunto_id)
+    deleted = service.delete_attachment(comprobante_id, adjunto_id, current_user)
     if not deleted:
         raise HTTPException(status_code=404, detail="Adjunto no encontrado")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
