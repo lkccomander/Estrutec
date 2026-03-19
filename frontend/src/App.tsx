@@ -1840,13 +1840,21 @@ function App() {
 
   async function handleUserCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!token) {
+      showActionFeedback('user-create', 'Debes iniciar sesion como administrador para crear usuarios.')
+      return
+    }
 
     try {
       setIsBusy(true)
-      const response = await request<AuthResponse>('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(createUserForm),
-      })
+      const response = await request<AuthResponse>(
+        '/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(createUserForm),
+        },
+        token,
+      )
       setCreateUserForm({
         nombre: '',
         email: '',
