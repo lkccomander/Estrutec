@@ -13,6 +13,12 @@ class Settings(BaseModel):
     jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    allow_public_registration: bool = os.getenv("ALLOW_PUBLIC_REGISTRATION", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     cors_origins: list[str] = [
         origin.strip()
         for origin in os.getenv(
