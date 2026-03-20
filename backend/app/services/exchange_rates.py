@@ -76,6 +76,22 @@ class ParsedExchangeRateEntry:
     updated_at: datetime
 
 
+def _merge_entries(*entry_groups: list[ParsedExchangeRateEntry]) -> list[ParsedExchangeRateEntry]:
+    merged: dict[tuple[str, str], ParsedExchangeRateEntry] = {}
+
+    for entries in entry_groups:
+        for entry in entries:
+            key = (entry.entity_type, entry.entity)
+            existing = merged.get(key)
+            if existing is None or entry.updated_at >= existing.updated_at:
+                merged[key] = entry
+
+    if not merged:
+        raise ExchangeRateScrapingError("No se pudieron extraer filas de tipo de cambio del BCCR.")
+
+    return list(merged.values())
+
+
 def _sanitize_html(raw_html: str) -> list[str]:
     html_without_scripts = re.sub(
         r"<script.*?</script>|<style.*?</style>",
@@ -235,10 +251,20 @@ def fetch_exchange_rate_dashboard() -> ExchangeRateDashboardRead:
     report_date = _extract_report_date(lines)
     table_rows = _extract_table_rows(response.text)
 
+    table_entries: list[ParsedExchangeRateEntry] = []
+    line_entries: list[ParsedExchangeRateEntry] = []
+
     try:
-        entries = _parse_entries_from_table(table_rows)
+        table_entries = _parse_entries_from_table(table_rows)
     except ExchangeRateScrapingError:
-        entries = _parse_entries_from_lines(lines)
+        table_entries = []
+
+    try:
+        line_entries = _parse_entries_from_lines(lines)
+    except ExchangeRateScrapingError:
+        line_entries = []
+
+    entries = _merge_entries(table_entries, line_entries)
 
     best_buy = max(entries, key=lambda entry: entry.buy_rate)
     best_sell = min(entries, key=lambda entry: entry.sell_rate)
