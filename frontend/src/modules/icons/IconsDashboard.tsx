@@ -102,7 +102,7 @@ export function IconsDashboard({ onBack }: IconsDashboardProps) {
         <div className="section-title">
           <h2>Galeria de iconos React</h2>
           <button className="tab-btn" type="button" onClick={onBack}>
-            Volver a presupuestos
+            Volver a rubros
           </button>
         </div>
         <p className="list-meta">

@@ -46,9 +46,9 @@
     "log": "Log Panel",
     "users": "Users Dashboard",
     "icons": "Icons Dashboard",
-    "budgetDetail": "Active Budget Dashboard",
+    "budgetDetail": "Active CostCategory Dashboard",
     "projects": "Projects Dashboard",
-    "budgets": "Budgets Dashboard"
+    "budgets": "CostCategories Dashboard"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -60,7 +60,7 @@
     "log": "Log",
     "sync": "Sync",
     "logout": "Log out",
-    "backToBudgets": "Back to budgets"
+    "backToBudgets": "Back to CostCategories"
   },
   "receiptForm": {
     "exchangeRate": "Exchange rate"
@@ -102,7 +102,7 @@
   "summary": {
     "activeProjects": "Active Projects",
     "activeProjectsMeta": "Projects currently marked as active",
-    "activeBudgets": "Active Budgets",
+    "activeBudgets": "Active CostCategories",
     "receipts": "Receipts",
     "cashboxReceipts": "Petty Cash Receipts"
   },

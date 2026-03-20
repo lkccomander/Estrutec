@@ -274,15 +274,15 @@ function getApprovalFeedback(observacion?: string | null) {
   }
 
   if (observacion.includes('sobrepasa el saldo restante del presupuesto')) {
-    return 'El comprobante no se puede aprobar porque su monto sobrepasa el saldo restante del presupuesto.'
+    return 'El comprobante no se puede aprobar porque su monto sobrepasa el saldo restante del rubro.'
   }
 
   if (observacion.includes('tipo de cambio')) {
-    return 'El comprobante no se puede aprobar porque falta el tipo de cambio para convertirlo a la moneda del presupuesto.'
+    return 'El comprobante no se puede aprobar porque falta el tipo de cambio para convertirlo a la moneda del rubro.'
   }
 
   if (observacion.includes('moneda del comprobante no coincide')) {
-    return 'El comprobante no se puede aprobar porque la moneda del comprobante no coincide con la del presupuesto.'
+    return 'El comprobante no se puede aprobar porque la moneda del comprobante no coincide con la del rubro.'
   }
 
   return null
@@ -1180,7 +1180,7 @@ function App() {
                   <div className="excel-row-detail">
                     {receipt.monto_presupuesto ? (
                       <p className="record-conversion">
-                        Monto aplicado al presupuesto:{' '}
+                        Monto aplicado al rubro:{' '}
                         {formatMoney(
                           receipt.monto_presupuesto,
                           selectedBudgetDetails?.moneda ?? receipt.moneda,
@@ -1289,7 +1289,7 @@ function App() {
     }
 
     if (!budgetForm.proyecto_id) {
-      showActionFeedback('budget-create', 'Selecciona un proyecto antes de crear el presupuesto.')
+      showActionFeedback('budget-create', 'Selecciona un proyecto antes de crear el rubro.')
       return
     }
 
@@ -1314,10 +1314,10 @@ function App() {
         ...current,
         presupuesto_id: budget.presupuesto_id,
       }))
-      showActionFeedback('budget-create', 'Presupuesto creado.')
+      showActionFeedback('budget-create', 'Rubro creado.')
       await refreshDashboard(token, budget.proyecto_id)
     } catch (error) {
-      showActionFeedback('budget-create', error instanceof Error ? error.message : 'No se pudo crear el presupuesto.')
+      showActionFeedback('budget-create', error instanceof Error ? error.message : 'No se pudo crear el rubro.')
     } finally {
       setIsBusy(false)
     }
@@ -1345,10 +1345,10 @@ function App() {
         },
         token,
       )
-      showActionFeedback('budget-update', 'Presupuesto actualizado.')
+      showActionFeedback('budget-update', 'Rubro actualizado.')
       await refreshDashboard(token, budgetMaintenanceForm.proyecto_id || selectedProjectId)
     } catch (error) {
-      showActionFeedback('budget-update', error instanceof Error ? error.message : 'No se pudo actualizar el presupuesto.')
+      showActionFeedback('budget-update', error instanceof Error ? error.message : 'No se pudo actualizar el rubro.')
     } finally {
       setIsBusy(false)
     }
@@ -1722,7 +1722,7 @@ function App() {
           receipt.tipo_comprobante === 'CAJA_CHICA'
             ? ''
             : formatMoney(receipt.monto_gasto, receipt.moneda),
-        'Monto presupuesto':
+        'Monto rubro':
           receipt.tipo_comprobante === 'CAJA_CHICA' && receipt.monto_presupuesto
             ? formatMoney(receipt.monto_presupuesto, budgetCurrency)
             : '',
@@ -1752,7 +1752,7 @@ function App() {
           categoriaColumn = col
         } else if (cellValue === 'Monto del gasto') {
           montoColumn = col
-        } else if (cellValue === 'Monto presupuesto') {
+        } else if (cellValue === 'Monto rubro') {
           montoPresupuestoColumn = col
         } else if (cellValue === 'Balance') {
           balanceColumn = col
@@ -1800,7 +1800,7 @@ function App() {
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'ComprobantesAprobados')
       const budgetName =
-        selectedBudgetDetails?.categoria.trim().replace(/[^\w-]+/g, '_') || 'presupuesto'
+        selectedBudgetDetails?.categoria.trim().replace(/[^\w-]+/g, '_') || 'rubro'
       XLSX.writeFile(workbook, `comprobantes_aprobados_${budgetName}.xlsx`)
       showActionFeedback('export-approved', 'Comprobantes aprobados exportados a Excel.')
     } catch (error) {
@@ -2115,17 +2115,17 @@ function App() {
     const budgetId = selectedBudgetDetails?.presupuesto_id
 
     if (!budgetId) {
-      showActionFeedback('budget-id-copy', 'No hay ID de presupuesto para copiar.')
+      showActionFeedback('budget-id-copy', 'No hay ID de rubro para copiar.')
       return
     }
 
     try {
       await navigator.clipboard.writeText(budgetId)
-      showActionFeedback('budget-id-copy', 'ID del presupuesto copiado.')
+      showActionFeedback('budget-id-copy', 'ID del rubro copiado.')
     } catch (error) {
       showActionFeedback(
         'budget-id-copy',
-        error instanceof Error ? error.message : 'No se pudo copiar el ID del presupuesto.',
+        error instanceof Error ? error.message : 'No se pudo copiar el ID del rubro.',
       )
     }
   }
@@ -2376,7 +2376,7 @@ function App() {
                   ? 'Resumen de usuarios'
                   : activeDashboard === 'icons'
                     ? 'Galeria de iconos'
-                    : 'Presupuesto activo'}
+                    : 'Rubro activo'}
               </h3>
               {activeDashboard === 'users' ? (
                 <>
@@ -2402,13 +2402,13 @@ function App() {
               ) : (
                 <>
                   <p className="health-row">
-                    Nombre del presupuesto:{' '}
+                    Nombre del rubro:{' '}
                     <span className="budget-name-highlight">
-                      {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
+                      {selectedBudgetDetails?.categoria ?? 'Sin rubro'}
                     </span>
                   </p>
                   <p className="health-meta budget-id-row">
-                    ID del presupuesto:{' '}
+                    ID del rubro:{' '}
                     <span className="budget-id-highlight">
                       {selectedBudgetDetails?.presupuesto_id ?? 'N/D'}
                     </span>
@@ -2512,7 +2512,7 @@ function App() {
                     </span>
                   </p>
                   <p className="health-meta">
-                    Comprobantes del presupuesto: {budgetReceipts.length}
+                    Comprobantes del rubro: {budgetReceipts.length}
                   </p>
                 </>
               )}
@@ -2524,15 +2524,15 @@ function App() {
 
       {activeDashboard === 'budget-detail' ? (
         <article className="card-group detail-summary-card">
-          <h2>Resumen Presupuesto</h2>
+          <h2>Resumen Rubro</h2>
           <p className="health-row">
-            Nombre del presupuesto:{' '}
+            Nombre del rubro:{' '}
             <span className="budget-name-highlight">
-              {selectedBudgetDetails?.categoria ?? 'Sin presupuesto'}
+              {selectedBudgetDetails?.categoria ?? 'Sin rubro'}
             </span>
           </p>
           <p className="health-meta budget-id-row">
-            ID del presupuesto:{' '}
+            ID del rubro:{' '}
             <span className="budget-id-highlight">
               {selectedBudgetDetails?.presupuesto_id ?? 'N/D'}
             </span>
@@ -2892,9 +2892,9 @@ function App() {
               <article className="card project-donut-card">
                 <div className="section-title">
                   <div>
-                    <h2>Distribucion de presupuesto por proyecto</h2>
+                    <h2>Distribucion de rubros por proyecto</h2>
                     <p className="muted">
-                      Cada segmento representa el presupuesto total del proyecto.
+                      Cada segmento representa el rubro total del proyecto.
                     </p>
                   </div>
                 </div>
@@ -2940,7 +2940,7 @@ function App() {
                     </div>
                   </div>
                 ) : (
-                  <p className="empty">No hay proyectos activos con presupuesto total para representar en la dona.</p>
+                  <p className="empty">No hay proyectos activos con rubro total para representar en la dona.</p>
                 )}
               </article>
 
@@ -3141,7 +3141,7 @@ function App() {
             </div>
             <form className="form-grid two-columns" onSubmit={handleReceiptCreate}>
               <label className="field">
-                <span>Presupuesto</span>
+                <span>Rubro</span>
                 <input
                   className="input"
                   value={
@@ -3464,7 +3464,7 @@ function App() {
               {renderReceiptTable(
                 'Comprobantes aprobados',
                 approvedBudgetReceipts,
-                'No hay comprobantes aprobados para este presupuesto.',
+                'No hay comprobantes aprobados para este rubro.',
                 {
                   label: isExportingApproved ? 'Exportando...' : 'Exportar a Excel',
                   onClick: () => void handleExportApprovedReceipts(),
@@ -3474,12 +3474,12 @@ function App() {
               {renderReceiptTable(
                 'Comprobantes pendientes',
                 pendingBudgetReceipts,
-                'No hay comprobantes pendientes para este presupuesto.',
+                'No hay comprobantes pendientes para este rubro.',
               )}
               {renderReceiptTable(
                 'Comprobantes rechazados',
                 rejectedBudgetReceipts,
-                'No hay comprobantes rechazados para este presupuesto.',
+                'No hay comprobantes rechazados para este rubro.',
               )}
             </div>
           </article>

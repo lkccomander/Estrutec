@@ -46,9 +46,9 @@
     "log": "Panel de Log",
     "users": "Dashboard de Usuarios",
     "icons": "Dashboard de Iconos",
-    "budgetDetail": "Dashboard de Presupuesto Activo",
+    "budgetDetail": "Dashboard de Rubro Activo",
     "projects": "Dashboard de Proyectos",
-    "budgets": "Dashboard de Presupuestos"
+    "budgets": "Dashboard de Rubros"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -60,7 +60,7 @@
     "log": "Log",
     "sync": "Sincronizar",
     "logout": "Cerrar sesion",
-    "backToBudgets": "Volver a presupuestos"
+    "backToBudgets": "Volver a rubros"
   },
   "receiptForm": {
     "exchangeRate": "Tipo de cambio"
@@ -102,7 +102,7 @@
   "summary": {
     "activeProjects": "Proyectos activos",
     "activeProjectsMeta": "Proyectos marcados actualmente como activos",
-    "activeBudgets": "Presupuestos activos",
+    "activeBudgets": "Rubros activos",
     "receipts": "Comprobantes",
     "cashboxReceipts": "Comprobantes de caja chica"
   },

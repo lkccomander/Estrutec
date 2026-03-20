@@ -209,7 +209,7 @@ export function BudgetsDashboard({
           <div className="field">
             <span>Totales</span>
             <div className="maintenance-note">
-              Presupuesto proyecto{' '}
+              Rubro proyecto{' '}
               {selectedProject ? formatProjectTotal(selectedProject.presupuesto_proyecto) : '0.00'}
               {' / '}
               Balance proyecto{' '}
@@ -248,7 +248,7 @@ export function BudgetsDashboard({
 
       <article className="card-group">
         <div className="section-title">
-          <h2>Crear presupuesto</h2>
+          <h2>Crear rubro</h2>
           <span className="list-meta">{visibleBudgets.length} registros</span>
         </div>
         <form className="form-grid two-columns" onSubmit={onCreateBudget}>
@@ -268,7 +268,7 @@ export function BudgetsDashboard({
             </select>
           </label>
           <label className="field">
-            <span>Nombre del Presupuesto</span>
+            <span>Nombre del Rubro</span>
             <input
               className="input"
               value={budgetForm.categoria}
@@ -300,7 +300,7 @@ export function BudgetsDashboard({
           <div className="field">
             <span>&nbsp;</span>
             <button className="sync-btn" type="submit" disabled={isBusy}>
-              Crear presupuesto
+              Crear rubro
             </button>
             <ActionFeedback
               message={actionFeedback?.target === 'budget-create' ? actionFeedback.message : null}
@@ -344,7 +344,7 @@ export function BudgetsDashboard({
                 </span>
               </div>
               <div className="record-foot">
-                <p>Presupuesto {formatProjectTotal(project.presupuesto_proyecto)}</p>
+                <p>Rubro {formatProjectTotal(project.presupuesto_proyecto)}</p>
                 <p>Balance {formatProjectTotal(project.balance_proyecto)}</p>
               </div>
               {project.fecha_fin_proyecto ? (
@@ -360,7 +360,7 @@ export function BudgetsDashboard({
 
       <article className="card-group">
         <div className="section-title">
-          <h2>Presupuestos</h2>
+          <h2>Rubros</h2>
           <select
             className="select mini-select"
             value={selectedBudgetId}
@@ -432,8 +432,8 @@ export function BudgetsDashboard({
           {visibleBudgets.length === 0 ? (
             <p className="empty">
               {activeProjectFilterId
-                ? 'No hay presupuestos para el proyecto seleccionado.'
-                : 'Inicia sesion para ver presupuestos.'}
+                ? 'No hay rubros para el proyecto seleccionado.'
+                : 'Inicia sesion para ver rubros.'}
             </p>
           ) : null}
         </div>

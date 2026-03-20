@@ -94,7 +94,7 @@ export function ProjectBudgetsDashboard({
     <section className="panel-stack">
       <article className="card-group">
         <div className="section-title">
-          <h2>Crear presupuesto</h2>
+          <h2>Crear rubro</h2>
           <div className="action-row">
             <span className="list-meta">
               {selectedProject?.nombre_proyecto ?? 'Selecciona un proyecto primero'}
@@ -121,7 +121,7 @@ export function ProjectBudgetsDashboard({
             </select>
           </label>
           <label className="field">
-            <span>Nombre del presupuesto</span>
+            <span>Nombre del rubro</span>
             <input
               className="input"
               value={budgetForm.categoria}
@@ -153,7 +153,7 @@ export function ProjectBudgetsDashboard({
           <div className="field">
             <span>&nbsp;</span>
             <button className="sync-btn" type="submit" disabled={isBusy || !selectedProjectId}>
-              Crear presupuesto
+              Crear rubro
             </button>
             <ActionFeedback
               message={actionFeedback?.target === 'budget-create' ? actionFeedback.message : null}
@@ -165,20 +165,20 @@ export function ProjectBudgetsDashboard({
 
       <article className="card-group">
         <div className="section-title">
-          <h2>Mantenimiento de presupuesto</h2>
+          <h2>Mantenimiento de rubro</h2>
           <span className="list-meta">
-            {selectedBudget?.categoria ?? 'Selecciona un presupuesto'}
+            {selectedBudget?.categoria ?? 'Selecciona un rubro'}
           </span>
         </div>
         <form className="form-grid two-columns" onSubmit={onUpdateBudget}>
           <label className="field">
-            <span>Presupuesto</span>
+            <span>Rubro</span>
             <select
               className="select"
               value={selectedBudgetId}
               onChange={(event) => onSelectBudget(event.target.value)}
             >
-              <option value="">Selecciona un presupuesto</option>
+              <option value="">Selecciona un rubro</option>
               {visibleBudgets.map((budget) => (
                 <option key={budget.presupuesto_id} value={budget.presupuesto_id}>
                   {budget.categoria} ({budget.moneda})
@@ -202,7 +202,7 @@ export function ProjectBudgetsDashboard({
             </select>
           </label>
           <label className="field">
-            <span>Nombre del presupuesto</span>
+            <span>Nombre del rubro</span>
             <input
               className="input"
               value={budgetMaintenanceForm.categoria}
@@ -248,7 +248,7 @@ export function ProjectBudgetsDashboard({
           <div className="field">
             <span>&nbsp;</span>
             <button className="sync-btn" type="submit" disabled={isBusy || !selectedBudgetId}>
-              Actualizar presupuesto
+              Actualizar rubro
             </button>
             <ActionFeedback
               message={actionFeedback?.target === 'budget-update' ? actionFeedback.message : null}
@@ -260,7 +260,7 @@ export function ProjectBudgetsDashboard({
 
       <article className="card-group">
         <div className="section-title">
-          <h2>Presupuestos</h2>
+          <h2>Rubros</h2>
           <span className="list-meta">{visibleBudgets.length} registros</span>
         </div>
         <div className="list-scroll">
@@ -320,8 +320,8 @@ export function ProjectBudgetsDashboard({
           {visibleBudgets.length === 0 ? (
             <p className="empty">
               {selectedProjectId
-                ? 'No hay presupuestos para el proyecto seleccionado.'
-                : 'Selecciona un proyecto para ver sus presupuestos.'}
+                ? 'No hay rubros para el proyecto seleccionado.'
+                : 'Selecciona un proyecto para ver sus rubros.'}
             </p>
           ) : null}
         </div>

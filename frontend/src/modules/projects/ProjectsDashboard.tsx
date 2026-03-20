@@ -230,7 +230,7 @@ export function ProjectsDashboard({
           <div className="field">
             <span>Totales</span>
             <div className="maintenance-note">
-              Presupuesto proyecto{' '}
+              Rubro proyecto{' '}
               {selectedProject ? formatProjectTotal(selectedProject.presupuesto_proyecto) : '0.00'}
               {' / '}
               Balance proyecto{' '}
@@ -310,7 +310,7 @@ export function ProjectsDashboard({
                   >
                     <span className="button-with-icon">
                       <PiPiggyBankBold aria-hidden="true" />
-                      <span>Presupuestos</span>
+                      <span>Rubros</span>
                     </span>
                   </button>
                   <span className={`badge ${project.activo ? 'approved' : 'rejected'}`}>
@@ -319,7 +319,7 @@ export function ProjectsDashboard({
                 </div>
               </div>
               <div className="record-foot">
-                <p>Presupuesto {formatProjectTotal(project.presupuesto_proyecto)}</p>
+                <p>Rubro {formatProjectTotal(project.presupuesto_proyecto)}</p>
                 <p>Balance {formatProjectTotal(project.balance_proyecto)}</p>
               </div>
               <div className="project-plot-track" aria-hidden="true">
