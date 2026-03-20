@@ -300,10 +300,19 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    })
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Error de red desconocido'
+    throw new Error(
+      `Fallo de red al solicitar ${path}. Revisa VITE_API_URL, CORS y que el backend este disponible. Detalle: ${reason}`,
+    )
+  }
 
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ApiError
