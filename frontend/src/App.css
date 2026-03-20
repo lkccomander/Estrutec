@@ -2037,6 +2037,42 @@ body.light-theme .project-map-item p {
   color: #e2e8f0;
 }
 
+.log-entry-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.log-entry-card-completado {
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.log-entry-card-rechazado {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.log-entry-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+.log-entry-comment-completado {
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  color: #fdba74;
+}
+
+.log-entry-comment-rechazado {
+  background: rgba(127, 29, 29, 0.24);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+}
+
 body.light-theme .exchange-rate-value {
   color: #0f172a;
 }
@@ -2053,6 +2089,14 @@ body.light-theme .log-entry-meta {
 body.light-theme .log-entry-meta strong,
 body.light-theme .log-entry-message {
   color: #0f172a;
+}
+
+body.light-theme .log-entry-comment-completado {
+  color: #c2410c;
+}
+
+body.light-theme .log-entry-comment-rechazado {
+  color: #b91c1c;
 }
 
 @media (max-width: 900px) {

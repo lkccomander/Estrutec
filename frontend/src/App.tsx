@@ -83,7 +83,10 @@ type LogEntry = {
   usuario_id: string
   autor_nombre: string
   autor_email: string
+  estado: 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO'
+  comentario_estado?: string | null
   created_at: string
+  updated_at: string
 }
 
 type Project = {
@@ -340,6 +343,7 @@ function App() {
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
   const [isExchangeRateLoading, setIsExchangeRateLoading] = useState(false)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+  const [logCommentDrafts, setLogCommentDrafts] = useState<Record<string, string>>({})
   const [users, setUsers] = useState<AuthUser[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [projectFilter, setProjectFilter] = useState<'active' | 'all' | 'archived'>('active')
@@ -1950,6 +1954,44 @@ function App() {
     }
   }
 
+  async function handleLogStatusUpdate(
+    logId: string,
+    estado: 'COMPLETADO' | 'RECHAZADO',
+  ) {
+    if (!token) {
+      return
+    }
+
+    try {
+      setIsBusy(true)
+      const updatedEntry = await request<LogEntry>(
+        `/log/${logId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            estado,
+            comentario_estado: logCommentDrafts[logId]?.trim() || null,
+          }),
+        },
+        token,
+      )
+      startTransition(() => {
+        setLogEntries((current) => current.map((entry) => (entry.log_id === logId ? updatedEntry : entry)))
+      })
+      showActionFeedback(
+        `log-update-${logId}`,
+        estado === 'RECHAZADO' ? 'Entrada rechazada.' : 'Entrada completada.',
+      )
+    } catch (error) {
+      showActionFeedback(
+        `log-update-${logId}`,
+        error instanceof Error ? error.message : 'No se pudo actualizar la entrada del log.',
+      )
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem('elatilo_token')
     setToken(null)
@@ -3071,7 +3113,14 @@ function App() {
               message={logMessage}
               isBusy={isBusy}
               actionFeedback={actionFeedback}
+              logCommentDrafts={logCommentDrafts}
               onMessageChange={setLogMessage}
+              onLogCommentChange={(logId, comment) =>
+                setLogCommentDrafts((current) => ({ ...current, [logId]: comment }))
+              }
+              onLogStatusUpdate={(logId, estado) => {
+                void handleLogStatusUpdate(logId, estado)
+              }}
               onSubmit={handleLogCreate}
             />
           ) : activeDashboard === 'users' ? (

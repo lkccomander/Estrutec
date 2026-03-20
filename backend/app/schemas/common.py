@@ -193,6 +193,11 @@ class LogEntryCreate(BaseModel):
     mensaje: str
 
 
+class LogEntryUpdate(BaseModel):
+    estado: str
+    comentario_estado: str | None = None
+
+
 class LogEntryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -202,3 +207,6 @@ class LogEntryRead(BaseModel):
     autor_nombre: str
     autor_email: str
     created_at: datetime
+    estado: str
+    comentario_estado: str | None
+    updated_at: datetime

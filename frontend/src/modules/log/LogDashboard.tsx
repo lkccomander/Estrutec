@@ -1,5 +1,7 @@
 import type { FormEvent } from 'react'
 
+import { HiOutlineExclamationTriangle } from 'react-icons/hi2'
+
 import { ActionFeedback } from '../../components/ActionFeedback'
 import { useI18n } from '../../i18n/useI18n'
 
@@ -17,7 +19,10 @@ type LogEntry = {
   usuario_id: string
   autor_nombre: string
   autor_email: string
+  estado: 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO'
+  comentario_estado?: string | null
   created_at: string
+  updated_at: string
 }
 
 type LogDashboardProps = {
@@ -25,7 +30,10 @@ type LogDashboardProps = {
   message: string
   isBusy: boolean
   actionFeedback: ActionFeedbackState
+  logCommentDrafts: Record<string, string>
   onMessageChange: (message: string) => void
+  onLogCommentChange: (logId: string, comment: string) => void
+  onLogStatusUpdate: (logId: string, status: 'COMPLETADO' | 'RECHAZADO') => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 
@@ -38,7 +46,10 @@ export function LogDashboard({
   message,
   isBusy,
   actionFeedback,
+  logCommentDrafts,
   onMessageChange,
+  onLogCommentChange,
+  onLogStatusUpdate,
   onSubmit,
 }: LogDashboardProps) {
   const { language, t } = useI18n()
@@ -88,13 +99,46 @@ export function LogDashboard({
         ) : (
           <div className="log-list">
             {entries.map((entry) => (
-              <article className="log-entry-card" key={entry.log_id}>
+              <article className={`log-entry-card log-entry-card-${entry.estado.toLowerCase()}`} key={entry.log_id}>
                 <div className="log-entry-meta">
                   <strong>{entry.autor_nombre}</strong>
                   <span>{entry.autor_email}</span>
                   <span>{formatTimestamp(entry.created_at, locale)}</span>
+                  <span className={`health-badge ${entry.estado === 'COMPLETADO' ? 'ok' : entry.estado === 'RECHAZADO' ? 'error' : 'unknown'}`}>
+                    {t(`log.status.${entry.estado.toLowerCase()}`)}
+                  </span>
                 </div>
                 <p className="log-entry-message">{entry.mensaje}</p>
+                {entry.comentario_estado ? (
+                  <div className={`log-entry-comment log-entry-comment-${entry.estado.toLowerCase()}`}>
+                    {entry.estado === 'RECHAZADO' ? <HiOutlineExclamationTriangle aria-hidden="true" /> : null}
+                    <span>{entry.comentario_estado}</span>
+                  </div>
+                ) : null}
+                <div className="log-entry-actions">
+                  <label className="field">
+                    <span>{t('log.commentLabel')}</span>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      value={logCommentDrafts[entry.log_id] ?? entry.comentario_estado ?? ''}
+                      onChange={(event) => onLogCommentChange(entry.log_id, event.target.value)}
+                      placeholder={t('log.commentPlaceholder')}
+                    />
+                  </label>
+                  <div className="action-row">
+                    <button className="tab-btn" type="button" disabled={isBusy} onClick={() => onLogStatusUpdate(entry.log_id, 'COMPLETADO')}>
+                      {t('log.complete')}
+                    </button>
+                    <button className="tab-btn" type="button" disabled={isBusy} onClick={() => onLogStatusUpdate(entry.log_id, 'RECHAZADO')}>
+                      {t('log.reject')}
+                    </button>
+                  </div>
+                  <ActionFeedback
+                    message={actionFeedback?.target === `log-update-${entry.log_id}` ? actionFeedback.message : null}
+                    tone={actionFeedback?.tone}
+                  />
+                </div>
               </article>
             ))}
           </div>

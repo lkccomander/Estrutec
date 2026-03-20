@@ -80,6 +80,19 @@ class FakeReceiptRepository:
 
 
 class FakeLogEntryRepository:
+    def __init__(self):
+        self.entry = {
+            "log_id": "log-1",
+            "mensaje": "mensaje",
+            "usuario_id": "user-1",
+            "autor_nombre": "User",
+            "autor_email": "user@example.com",
+            "created_at": "2026-03-19T00:00:00Z",
+            "estado": "PENDIENTE",
+            "comentario_estado": None,
+            "updated_at": "2026-03-19T00:00:00Z",
+        }
+
     def list_entries(self):
         return [{"scope": "all"}]
 
@@ -88,6 +101,15 @@ class FakeLogEntryRepository:
 
     def create_entry(self, payload: dict):
         return payload
+
+    def get_entry(self, log_id: str):
+        if log_id == self.entry["log_id"]:
+            return self.entry
+        return None
+
+    def update_entry(self, log_id: str, payload: dict):
+        self.entry = {**self.entry, **payload}
+        return self.entry
 
 
 def test_receipt_creator_id_is_forced_from_authenticated_user() -> None:
@@ -182,3 +204,21 @@ def test_log_entries_are_global_for_privileged_users() -> None:
     entries = service.list_entries({"usuario_id": "admin-1", "rol": "ADMIN"})
 
     assert entries == [{"scope": "all"}]
+
+
+def test_log_owner_can_complete_own_entry() -> None:
+    service = LogEntryService(FakeLogEntryRepository())
+
+    entry = service.update_entry("log-1", "COMPLETADO", "Listo", {"usuario_id": "user-1", "rol": "REGISTRADOR"})
+
+    assert entry["estado"] == "COMPLETADO"
+    assert entry["comentario_estado"] == "Listo"
+
+
+def test_non_owner_cannot_update_other_user_log_entry() -> None:
+    service = LogEntryService(FakeLogEntryRepository())
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.update_entry("log-1", "RECHAZADO", "No procede", {"usuario_id": "other-user", "rol": "REGISTRADOR"})
+
+    assert exc_info.value.status_code == 403

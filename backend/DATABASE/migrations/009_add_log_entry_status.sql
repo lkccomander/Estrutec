@@ -1,0 +1,11 @@
+ALTER TABLE log_entry
+    ADD COLUMN IF NOT EXISTS estado TEXT NOT NULL DEFAULT 'PENDIENTE',
+    ADD COLUMN IF NOT EXISTS comentario_estado TEXT NULL,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE log_entry
+    DROP CONSTRAINT IF EXISTS log_entry_estado_check;
+
+ALTER TABLE log_entry
+    ADD CONSTRAINT log_entry_estado_check
+    CHECK (estado IN ('PENDIENTE', 'COMPLETADO', 'RECHAZADO'));

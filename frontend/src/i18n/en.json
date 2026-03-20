@@ -93,11 +93,20 @@
     "title": "Log",
     "subtitle": "Messages saved by system users",
     "messageLabel": "Message",
+    "commentLabel": "Comment",
+    "commentPlaceholder": "Add an optional comment to complete or reject...",
     "placeholder": "Write your message here...",
     "save": "Save message",
     "saving": "Saving...",
+    "complete": "Complete",
+    "reject": "Reject",
     "historyTitle": "Message list",
-    "empty": "There are no log messages yet."
+    "empty": "There are no log messages yet.",
+    "status": {
+      "pendiente": "Pending",
+      "completado": "Completed",
+      "rechazado": "Rejected"
+    }
   },
   "summary": {
     "activeProjects": "Active Projects",

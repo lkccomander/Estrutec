@@ -93,11 +93,20 @@
     "title": "Log",
     "subtitle": "Mensajes guardados por los usuarios del sistema",
     "messageLabel": "Mensaje",
+    "commentLabel": "Comentario",
+    "commentPlaceholder": "Agrega un comentario opcional para completar o rechazar...",
     "placeholder": "Escribe aqui tu mensaje...",
     "save": "Guardar mensaje",
     "saving": "Guardando...",
+    "complete": "Completar",
+    "reject": "Rechazar",
     "historyTitle": "Lista de mensajes",
-    "empty": "Todavia no hay mensajes en el log."
+    "empty": "Todavia no hay mensajes en el log.",
+    "status": {
+      "pendiente": "Pendiente",
+      "completado": "Completado",
+      "rechazado": "Rechazado"
+    }
   },
   "summary": {
     "activeProjects": "Proyectos activos",
