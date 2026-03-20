@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.services.exchange_rates import ParsedExchangeRateEntry, _merge_entries
+from app.services.exchange_rates import ParsedExchangeRateEntry, _merge_entries, _parse_entries_from_table
 
 
 def test_merge_entries_preserves_missing_entities_from_secondary_source() -> None:
@@ -41,3 +41,52 @@ def test_merge_entries_preserves_missing_entities_from_secondary_source() -> Non
 
     assert "Banco Davivienda (Costa Rica) S.A" in merged_names
     assert "ARI Casa de Cambio Internacional S.A." in merged_names
+
+
+def test_parse_entries_from_table_supports_rows_without_repeated_entity_type() -> None:
+    rows = [
+        [
+            "Tipo de Entidad",
+            "Entidad Autorizada",
+            "Compra",
+            "Venta",
+            "Diferencial Cambiario",
+            "Ultima Actualizacion",
+        ],
+        [
+            "Bancos privados",
+            "Banco BAC San Jose S.A.",
+            "463,00",
+            "477,00",
+            "14,00",
+            "27/02/2026 05:36 p.m.",
+        ],
+        [
+            "Banco Davivienda (Costa Rica) S.A",
+            "461,00",
+            "479,00",
+            "18,00",
+            "27/02/2026 09:10 a.m.",
+        ],
+        [
+            "Casas de Cambio",
+            "Airpak Casa de Cambio",
+            "468,00",
+            "485,00",
+            "17,00",
+            "27/02/2026 10:36 a.m.",
+        ],
+        [
+            "ARI Casa de Cambio Internacional S.A.",
+            "466,56",
+            "472,43",
+            "5,87",
+            "28/02/2026 07:22 a.m.",
+        ],
+    ]
+
+    entries = _parse_entries_from_table(rows)
+    names = {entry.entity for entry in entries}
+
+    assert "Banco Davivienda (Costa Rica) S.A" in names
+    assert "ARI Casa de Cambio Internacional S.A." in names

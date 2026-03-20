@@ -165,10 +165,14 @@ def _parse_entries_from_table(rows: list[list[str]]) -> list[ParsedExchangeRateE
         if normalized_first_cell == "Enlaces":
             break
 
-        if len(row) < 6:
+        normalized_row = row
+        if len(row) == 5 and current_entity_type:
+            normalized_row = [current_entity_type, *row]
+
+        if len(normalized_row) < 6:
             continue
 
-        entity_type_cell, entity_cell, buy_value, sell_value, spread_value, updated_at_value = row[:6]
+        entity_type_cell, entity_cell, buy_value, sell_value, spread_value, updated_at_value = normalized_row[:6]
         entity_type = _normalize_label(entity_type_cell).strip() or current_entity_type
         entity = entity_cell.strip()
 
