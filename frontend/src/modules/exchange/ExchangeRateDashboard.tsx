@@ -36,6 +36,11 @@ type ExchangeRateDashboardProps = {
   onRefresh: () => void
 }
 
+const FEATURED_ENTITIES = new Set([
+  'Banco Davivienda (Costa Rica) S.A',
+  'ARI Casa de Cambio Internacional S.A.',
+])
+
 function formatRate(value: number, locale: string) {
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
@@ -55,6 +60,18 @@ export function ExchangeRateDashboard({
 }: ExchangeRateDashboardProps) {
   const { language, t } = useI18n()
   const locale = language === 'en' ? 'en-US' : 'es-CR'
+  const orderedEntries = data
+    ? [...data.entries].sort((left, right) => {
+        const leftFeatured = FEATURED_ENTITIES.has(left.entity) ? 0 : 1
+        const rightFeatured = FEATURED_ENTITIES.has(right.entity) ? 0 : 1
+
+        if (leftFeatured !== rightFeatured) {
+          return leftFeatured - rightFeatured
+        }
+
+        return 0
+      })
+    : []
 
   return (
     <section className="panel-stack">
@@ -144,8 +161,11 @@ export function ExchangeRateDashboard({
                 <span>{t('exchangeDashboard.tableUpdatedAt')}</span>
               </div>
               <div className="excel-list-body">
-                {data.entries.map((entry) => (
-                  <article className="excel-row exchange-rates-row" key={`${entry.entity_type}-${entry.entity}`}>
+                {orderedEntries.map((entry) => (
+                  <article
+                    className={`excel-row exchange-rates-row ${FEATURED_ENTITIES.has(entry.entity) ? 'exchange-featured-row' : ''}`}
+                    key={`${entry.entity_type}-${entry.entity}`}
+                  >
                     <span>{entry.entity_type}</span>
                     <span>{entry.entity}</span>
                     <span className="exchange-buy-rate">CRC {formatRate(entry.buy_rate, locale)}</span>
