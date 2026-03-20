@@ -5,6 +5,12 @@ backend/.venv/
 __pycache__/
 .pytest_cache/
 *.pyc
+.env
+.env.*
+!.env.example
+*.dump
+*.xls
+*.xlsx
 .DS_Store
 Thumbs.db
 (10) WhatsApp.html
