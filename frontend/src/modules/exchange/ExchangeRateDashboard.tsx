@@ -37,9 +37,23 @@ type ExchangeRateDashboardProps = {
 }
 
 const FEATURED_ENTITIES = new Set([
-  'Banco Davivienda (Costa Rica) S.A',
-  'ARI Casa de Cambio Internacional S.A.',
+  'banco davivienda costa rica sa',
+  'ari casa de cambio internacional sa',
 ])
+
+function normalizeEntityName(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[().]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+function isFeaturedEntity(entity: string) {
+  return FEATURED_ENTITIES.has(normalizeEntityName(entity))
+}
 
 function formatRate(value: number, locale: string) {
   return new Intl.NumberFormat(locale, {
@@ -62,8 +76,8 @@ export function ExchangeRateDashboard({
   const locale = language === 'en' ? 'en-US' : 'es-CR'
   const orderedEntries = data
     ? [...data.entries].sort((left, right) => {
-        const leftFeatured = FEATURED_ENTITIES.has(left.entity) ? 0 : 1
-        const rightFeatured = FEATURED_ENTITIES.has(right.entity) ? 0 : 1
+        const leftFeatured = isFeaturedEntity(left.entity) ? 0 : 1
+        const rightFeatured = isFeaturedEntity(right.entity) ? 0 : 1
 
         if (leftFeatured !== rightFeatured) {
           return leftFeatured - rightFeatured
@@ -163,7 +177,7 @@ export function ExchangeRateDashboard({
               <div className="excel-list-body">
                 {orderedEntries.map((entry) => (
                   <article
-                    className={`excel-row exchange-rates-row ${FEATURED_ENTITIES.has(entry.entity) ? 'exchange-featured-row' : ''}`}
+                    className={`excel-row exchange-rates-row ${isFeaturedEntity(entry.entity) ? 'exchange-featured-row' : ''}`}
                     key={`${entry.entity_type}-${entry.entity}`}
                   >
                     <span>{entry.entity_type}</span>
