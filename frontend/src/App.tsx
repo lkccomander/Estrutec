@@ -678,10 +678,15 @@ function App() {
   const receiptNeedsIssuerData = receiptForm.tipo_comprobante !== 'CAJA_CHICA'
 
   async function loadPublicHealth() {
-    const [appHealth, databaseHealth] = await Promise.all([
-      request<Health>('/health'),
-      request<Health>('/health/db'),
-    ])
+    const appHealth = await request<Health>('/health')
+    let databaseHealth: Health | null = null
+
+    try {
+      databaseHealth = await request<Health>('/health/db')
+    } catch {
+      databaseHealth = null
+    }
+
     startTransition(() => {
       setHealth(appHealth)
       setDbHealth(databaseHealth)
