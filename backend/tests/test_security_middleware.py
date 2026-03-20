@@ -13,9 +13,13 @@ def _build_app(monkeypatch, **env_vars):
         monkeypatch.setenv(key, value)
 
     import app.config as config_module
+    import app.api.routes.auth as auth_routes_module
+    import app.api.routes.health as health_routes_module
     import main as main_module
 
     importlib.reload(config_module)
+    importlib.reload(auth_routes_module)
+    importlib.reload(health_routes_module)
     importlib.reload(main_module)
     return main_module.create_app()
 
