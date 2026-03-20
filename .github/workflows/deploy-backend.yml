@@ -37,4 +37,4 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_BACKEND_SERVICE: ${{ secrets.RAILWAY_BACKEND_SERVICE }}
-        run: railway up backend --path-as-root --ci --service="$RAILWAY_BACKEND_SERVICE"
+        run: railway up backend --path-as-root --detach --service="$RAILWAY_BACKEND_SERVICE"
