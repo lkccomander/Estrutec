@@ -160,7 +160,21 @@ class ReceiptService:
     def create_attachment(self, receipt_id: str, payload: dict, current_user: dict) -> dict:
         receipt = self._get_receipt_or_404(receipt_id)
         self._ensure_can_manage_receipt(receipt, current_user)
-        return self._repository.create_attachment(receipt_id, payload)
+        try:
+            return self._repository.create_attachment(receipt_id, payload)
+        except Exception as exc:
+            error_message = str(exc)
+
+            if "value too long for type character varying" in error_message:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        "El adjunto contiene metadatos demasiado largos. "
+                        "Revisa el nombre del archivo o el tipo de archivo e intenta de nuevo."
+                    ),
+                ) from exc
+
+            raise
 
     def delete_attachment(self, receipt_id: str, attachment_id: str, current_user: dict) -> bool:
         receipt = self._get_receipt_or_404(receipt_id)

@@ -7,6 +7,7 @@ Current stack:
 - UI extras: react-icons + xlsx + local brand assets
 - Auth: JWT with python-jose, passlib, argon2
 - Database: PostgreSQL with SQL functions, triggers, and startup compatibility scripts
+- Deployment: Railway with separate backend/frontend services and GitHub Actions workflows
 
 Repository structure:
 - backend/
@@ -90,12 +91,21 @@ Attachment endpoints:
 - POST /comprobantes/{comprobante_id}/adjuntos
 - DELETE /comprobantes/{comprobante_id}/adjuntos/{adjunto_id}
 
+Exchange-rate endpoints:
+- GET /tipo-cambio/ventanilla
+
+Log endpoints:
+- GET /log
+- POST /log
+- PATCH /log/{log_id}
+
 Frontend behavior:
 - Login screen is decoupled from dashboard
 - Dashboard only appears after authentication
 - Frontend stores JWT in localStorage
 - Frontend talks to backend through VITE_API_URL
-- frontend/.env currently points to http://192.1.50.169:8000
+- Vite resolves VITE_API_URL at build time
+- frontend Dockerfile must expose VITE_API_URL during build with ARG/ENV
 - App.tsx is still the main orchestrator, but projects/budgets/users/icons already have extracted modules
 - First authenticated screen focuses on budgets
 - The first authenticated budget entry is referred to visually as dashboard1
@@ -119,8 +129,31 @@ Frontend behavior:
   - export approved receipts to Excel
   - switch between dark/light theme
   - browse a React icon gallery
+  - display BCCR exchange rates dashboard
+  - prioritize featured exchange-rate entities visually
+  - create log entries and update them to PENDIENTE/COMPLETADO/RECHAZADO with comment
   - contextual per-action feedback below action buttons
   - budget detail summary card aligned structurally with receipt panels
+
+Security hardening already implemented:
+- docs/openapi are disabled when ENV=prod
+- /health/db returns 404 in production
+- weak/default JWT secret is blocked in production
+- rate limiting exists for /, /health, /auth/login, /auth/register
+- security headers middleware is enabled
+- public registration is hidden by default
+- ADMIN can still create users through /auth/register
+- user listing is ADMIN-only
+- user detail is self-or-admin
+- inactive users cannot continue using old tokens
+- receipt and attachment access is restricted by owner/role
+- APROBADOR cannot approve own receipt; ADMIN can approve own receipt
+- non-privileged users only see their own log entries
+
+Current deployment lessons:
+- if frontend points to 127.0.0.1 in production, suspect missing VITE_API_URL at build time
+- use browser DevTools Console and Network early to verify the real Request URL
+- GitHub Actions deploy workflows now use detached Railway deploys to reduce failures from build-log streaming
 
 Current important decisions:
 - keep backend layered and simple
@@ -144,8 +177,8 @@ Known pending items:
 - user password change is still pending a backend endpoint
 - App.tsx still needs more extraction despite the new modules
 - visual polish is still iterative in the budget-detail header area
-- next infrastructure step is CI/CD for Railway
-- expected shape: GitHub Actions as CI gate, Railway as deploy target, separate frontend/backend services
+- attachment-related PostgreSQL column still needs expansion to fix `value too long for type character varying(100)`
+- dependency compatibility around passlib/bcrypt should be reviewed because logs showed `module 'bcrypt' has no attribute '__about__'`
 
 Useful project memory files:
 - project_brain/decision.md

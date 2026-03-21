@@ -283,8 +283,8 @@ CREATE TABLE IF NOT EXISTS adjunto (
     adjunto_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     comprobante_id UUID NOT NULL,
     cdn_path TEXT NOT NULL,
-    nombre_archivo VARCHAR(255),
-    tipo_archivo VARCHAR(100),
+    nombre_archivo TEXT,
+    tipo_archivo TEXT,
     orden INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
