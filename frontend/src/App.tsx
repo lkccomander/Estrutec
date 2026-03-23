@@ -587,7 +587,7 @@ function App() {
     height: 82,
   }
   const costaRicaMapImageUrl = 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mapa%20CR.svg'
-  const projectMapMarkers = activeProjects.flatMap((project) => {
+  const projectMapMarkers = activeProjects.flatMap((project, index) => {
       const latitude = Number(project.latitud)
       const longitude = Number(project.longitud)
 
@@ -599,14 +599,14 @@ function App() {
         (longitude - costaRicaBounds.minLng) / (costaRicaBounds.maxLng - costaRicaBounds.minLng)
       const normalizedY =
         (costaRicaBounds.maxLat - latitude) / (costaRicaBounds.maxLat - costaRicaBounds.minLat)
-      const matchingSegment = projectDonutSegments.find((item) => item.projectId === project.proyecto_id)
+      const markerColor = projectDonutColors[index % projectDonutColors.length]
 
       return [{
         projectId: project.proyecto_id,
         name: project.nombre_proyecto,
         xPercent: costaRicaMapFrame.left + normalizedX * costaRicaMapFrame.width,
         yPercent: costaRicaMapFrame.top + normalizedY * costaRicaMapFrame.height,
-        color: matchingSegment?.color ?? '#38bdf8',
+        color: markerColor,
         total: Number(project.presupuesto_proyecto),
         latitud: latitude,
         longitud: longitude,

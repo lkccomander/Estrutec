@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import psycopg
@@ -105,6 +106,12 @@ def _friendly_validation_message(exc: RequestValidationError) -> str:
     return "Hay datos invalidos en el formulario. Revisa los campos e intenta de nuevo."
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    _run_startup_migrations()
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
@@ -113,6 +120,7 @@ def create_app() -> FastAPI:
         docs_url=None if settings.is_prod else "/docs",
         redoc_url=None if settings.is_prod else "/redoc",
         openapi_url=None if settings.is_prod else "/openapi.json",
+        lifespan=lifespan,
     )
 
     @app.exception_handler(RequestValidationError)
@@ -166,7 +174,6 @@ def create_app() -> FastAPI:
             ),
         ],
     )
-    app.add_event_handler("startup", _run_startup_migrations)
     app.include_router(health_router)
     app.include_router(exchange_rates_router)
     app.include_router(log_entries_router)
