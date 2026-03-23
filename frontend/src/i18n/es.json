@@ -92,6 +92,7 @@
   "log": {
     "title": "Log",
     "subtitle": "Mensajes guardados por los usuarios del sistema",
+    "filterLabel": "Filtro",
     "messageLabel": "Mensaje",
     "commentLabel": "Comentario",
     "commentPlaceholder": "Agrega un comentario opcional para completar o rechazar...",
@@ -102,6 +103,11 @@
     "reject": "Rechazar",
     "historyTitle": "Lista de mensajes",
     "empty": "Todavia no hay mensajes en el log.",
+    "filters": {
+      "all": "Todos",
+      "pending": "Pendientes",
+      "completed": "Completados"
+    },
     "status": {
       "pendiente": "Pendiente",
       "completado": "Completado",

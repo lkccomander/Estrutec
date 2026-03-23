@@ -92,6 +92,7 @@
   "log": {
     "title": "Log",
     "subtitle": "Messages saved by system users",
+    "filterLabel": "Filter",
     "messageLabel": "Message",
     "commentLabel": "Comment",
     "commentPlaceholder": "Add an optional comment to complete or reject...",
@@ -102,6 +103,11 @@
     "reject": "Reject",
     "historyTitle": "Message list",
     "empty": "There are no log messages yet.",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "completed": "Completed"
+    },
     "status": {
       "pendiente": "Pending",
       "completado": "Completed",

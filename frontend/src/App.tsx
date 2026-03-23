@@ -178,6 +178,19 @@ type ActionFeedbackState = {
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
+function formatReceiptTypeLabel(type: ReceiptType) {
+  switch (type) {
+    case 'FACTURA_FOTO':
+      return 'FACTURA FOTO - DEBITO'
+    case 'SINPE_MOVIL':
+      return 'SINPE MOVIL - DEBITO'
+    case 'CAJA_CHICA':
+      return 'CAJA CHICA - CREDITO'
+    default:
+      return type
+  }
+}
+
 function formatMoney(amount: string, currency: Currency) {
   return new Intl.NumberFormat('es-CR', {
     style: 'currency',
@@ -344,6 +357,7 @@ function App() {
   const [isExchangeRateLoading, setIsExchangeRateLoading] = useState(false)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [logCommentDrafts, setLogCommentDrafts] = useState<Record<string, string>>({})
+  const [logStatusFilter, setLogStatusFilter] = useState<'ALL' | 'PENDIENTE' | 'COMPLETADO'>('ALL')
   const [users, setUsers] = useState<AuthUser[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [projectFilter, setProjectFilter] = useState<'active' | 'all' | 'archived'>('active')
@@ -1151,7 +1165,7 @@ function App() {
                       : 'excel-type excel-type-expense'
                   }
                 >
-                  {receipt.tipo_comprobante === 'CAJA_CHICA' ? 'Caja chica' : receipt.tipo_comprobante}
+                  {formatReceiptTypeLabel(receipt.tipo_comprobante)}
                 </span>
                 <span
                   className={
@@ -1733,7 +1747,7 @@ function App() {
         Negocio: receipt.negocio,
         Cedula: receipt.cedula ?? '',
         Descripcion: receipt.descripcion,
-        Tipo: receipt.tipo_comprobante,
+        Tipo: formatReceiptTypeLabel(receipt.tipo_comprobante),
         Categoria: receipt.tipo_comprobante === 'CAJA_CHICA' ? 'Caja chica' : 'Gasto',
         Moneda: receipt.moneda,
         'Monto del gasto':
@@ -3110,11 +3124,13 @@ function App() {
           ) : activeDashboard === 'log' ? (
             <LogDashboard
               entries={logEntries}
+              statusFilter={logStatusFilter}
               message={logMessage}
               isBusy={isBusy}
               actionFeedback={actionFeedback}
               logCommentDrafts={logCommentDrafts}
               onMessageChange={setLogMessage}
+              onStatusFilterChange={setLogStatusFilter}
               onLogCommentChange={(logId, comment) =>
                 setLogCommentDrafts((current) => ({ ...current, [logId]: comment }))
               }
@@ -3364,9 +3380,9 @@ function App() {
                     }))
                   }
                 >
-                  <option value="FACTURA_FOTO">Factura foto</option>
-                  <option value="SINPE_MOVIL">SINPE movil</option>
-                  <option value="CAJA_CHICA">Caja chica</option>
+                  <option value="FACTURA_FOTO">FACTURA FOTO - DEBITO</option>
+                  <option value="SINPE_MOVIL">SINPE MOVIL - DEBITO</option>
+                  <option value="CAJA_CHICA">CAJA CHICA - CREDITO</option>
                 </select>
               </label>
               <div className="field">

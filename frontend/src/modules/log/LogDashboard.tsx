@@ -27,11 +27,13 @@ type LogEntry = {
 
 type LogDashboardProps = {
   entries: LogEntry[]
+  statusFilter: 'ALL' | 'PENDIENTE' | 'COMPLETADO'
   message: string
   isBusy: boolean
   actionFeedback: ActionFeedbackState
   logCommentDrafts: Record<string, string>
   onMessageChange: (message: string) => void
+  onStatusFilterChange: (status: 'ALL' | 'PENDIENTE' | 'COMPLETADO') => void
   onLogCommentChange: (logId: string, comment: string) => void
   onLogStatusUpdate: (logId: string, status: 'COMPLETADO' | 'RECHAZADO') => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
@@ -43,17 +45,23 @@ function formatTimestamp(value: string, locale: string) {
 
 export function LogDashboard({
   entries,
+  statusFilter,
   message,
   isBusy,
   actionFeedback,
   logCommentDrafts,
   onMessageChange,
+  onStatusFilterChange,
   onLogCommentChange,
   onLogStatusUpdate,
   onSubmit,
 }: LogDashboardProps) {
   const { language, t } = useI18n()
   const locale = language === 'en' ? 'en-US' : 'es-CR'
+  const filteredEntries =
+    statusFilter === 'ALL'
+      ? entries
+      : entries.filter((entry) => entry.estado === statusFilter)
 
   return (
     <section className="panel-stack">
@@ -90,15 +98,31 @@ export function LogDashboard({
 
       <article className="card-group">
         <div className="section-title">
-          <h2>{t('log.historyTitle')}</h2>
-          <span className="list-meta">{entries.length}</span>
+          <div>
+            <h2>{t('log.historyTitle')}</h2>
+            <span className="list-meta">{filteredEntries.length}</span>
+          </div>
+          <label className="field mini-select">
+            <span>{t('log.filterLabel')}</span>
+            <select
+              className="select"
+              value={statusFilter}
+              onChange={(event) =>
+                onStatusFilterChange(event.target.value as 'ALL' | 'PENDIENTE' | 'COMPLETADO')
+              }
+            >
+              <option value="ALL">{t('log.filters.all')}</option>
+              <option value="PENDIENTE">{t('log.filters.pending')}</option>
+              <option value="COMPLETADO">{t('log.filters.completed')}</option>
+            </select>
+          </label>
         </div>
 
-        {entries.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <p className="empty">{t('log.empty')}</p>
         ) : (
           <div className="log-list">
-            {entries.map((entry) => (
+            {filteredEntries.map((entry) => (
               <article className={`log-entry-card log-entry-card-${entry.estado.toLowerCase()}`} key={entry.log_id}>
                 <div className="log-entry-meta">
                   <strong>{entry.autor_nombre}</strong>

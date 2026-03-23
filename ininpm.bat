@@ -10,6 +10,6 @@ if not exist "package.json" (
 )
 
 echo Iniciando frontend con Vite
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 127.0.0.1
 
 endlocal
