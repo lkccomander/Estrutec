@@ -895,6 +895,7 @@ h2 {
 .project-donut-wrap {
   display: grid;
   place-items: center;
+  gap: 12px;
 }
 
 .project-donut-chart {
@@ -903,8 +904,18 @@ h2 {
   display: block;
 }
 
+.project-donut-layout-animated .project-donut-chart {
+  animation: slowDonutPanelReveal 720ms ease forwards;
+}
+
 .project-donut-base {
   fill: rgba(15, 23, 42, 0.7);
+}
+
+.project-donut-segment {
+  opacity: 0;
+  transform-origin: 132px 132px;
+  animation: slowDonutSegmentReveal 900ms ease forwards;
 }
 
 .project-donut-hole {
@@ -915,6 +926,11 @@ h2 {
   fill: #94a3b8;
   font-size: 13px;
   font-weight: 700;
+}
+
+.project-donut-project-label {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .project-donut-total-value {
@@ -939,6 +955,12 @@ h2 {
   padding: 14px 16px;
   background: rgba(15, 23, 42, 0.72);
   border-top: 1px solid rgba(51, 65, 85, 0.65);
+}
+
+.project-donut-item-animated {
+  opacity: 0;
+  transform: translateX(18px);
+  animation: slowDonutLegendReveal 620ms ease forwards;
 }
 
 .project-donut-item:first-child {
@@ -966,6 +988,42 @@ h2 {
 .project-donut-item p {
   color: #94a3b8;
   font-size: 0.84rem;
+}
+
+@keyframes slowDonutPanelReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slowDonutSegmentReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slowDonutLegendReveal {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .project-map-card {

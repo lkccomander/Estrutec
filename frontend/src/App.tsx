@@ -361,6 +361,7 @@ function App() {
   const [users, setUsers] = useState<AuthUser[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [projectFilter, setProjectFilter] = useState<'active' | 'all' | 'archived'>('active')
+  const [homeProjectBudgetViewId, setHomeProjectBudgetViewId] = useState('')
   const [budgetSectionView, setBudgetSectionView] = useState<'projects' | 'budgets'>('projects')
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [receipts, setReceipts] = useState<Receipt[]>([])
@@ -536,26 +537,40 @@ function App() {
     projectHistoryOffset + projectHistoryPageSize,
   )
   const projectDonutColors = ['#22c55e', '#f97316', '#38bdf8', '#f43f5e', '#fbbf24', '#a855f7', '#14b8a6']
-  const projectDonutData = activeProjects
-    .map((project, index) => ({
-      projectId: project.proyecto_id,
-      name: project.nombre_proyecto,
-      total: Number(project.presupuesto_proyecto),
+  const homeProjectBudgetOptions = projects
+    .slice()
+    .sort((left, right) => left.nombre_proyecto.localeCompare(right.nombre_proyecto, 'es'))
+  const selectedHomeProjectBudget =
+    homeProjectBudgetOptions.find((project) => project.proyecto_id === homeProjectBudgetViewId) ??
+    homeProjectBudgetOptions[0] ??
+    null
+  const selectedHomeProjectBudgets = budgets
+    .filter((budget) => budget.proyecto_id === selectedHomeProjectBudget?.proyecto_id)
+    .map((budget, index) => ({
+      budgetId: budget.presupuesto_id,
+      name: budget.categoria,
+      total: Number(budget.monto_total),
+      currency: budget.moneda,
+      status: budget.estado,
       color: projectDonutColors[index % projectDonutColors.length],
     }))
-    .filter((project) => project.total > 0)
+    .filter((budget) => budget.total > 0)
     .sort((left, right) => right.total - left.total)
-  const projectDonutTotal = projectDonutData.reduce((sum, project) => sum + project.total, 0)
+  const selectedHomeProjectBudgetCurrencies = Array.from(
+    new Set(selectedHomeProjectBudgets.map((budget) => budget.currency)),
+  )
+  const selectedHomeProjectHasMixedCurrencies = selectedHomeProjectBudgetCurrencies.length > 1
+  const projectDonutTotal = selectedHomeProjectBudgets.reduce((sum, budget) => sum + budget.total, 0)
   let donutRunningAngle = 0
-  const projectDonutSegments = projectDonutData.map((project) => {
-    const angle = projectDonutTotal > 0 ? (project.total / projectDonutTotal) * 360 : 0
+  const projectDonutSegments = selectedHomeProjectBudgets.map((budget) => {
+    const angle = projectDonutTotal > 0 ? (budget.total / projectDonutTotal) * 360 : 0
     const startAngle = donutRunningAngle
     const endAngle = donutRunningAngle + angle
     donutRunningAngle = endAngle
 
     return {
-      ...project,
-      percent: projectDonutTotal > 0 ? (project.total / projectDonutTotal) * 100 : 0,
+      ...budget,
+      percent: projectDonutTotal > 0 ? (budget.total / projectDonutTotal) * 100 : 0,
       path: describeDonutArc(132, 132, 104, 60, startAngle, endAngle),
     }
   })
@@ -597,6 +612,22 @@ function App() {
         longitud: longitude,
       }]
     })
+  useEffect(() => {
+    const availableProjectIds = projects.map((project) => project.proyecto_id)
+
+    if (!availableProjectIds.length) {
+      if (homeProjectBudgetViewId) {
+        setHomeProjectBudgetViewId('')
+      }
+      return
+    }
+
+    const hasCurrentSelection = availableProjectIds.includes(homeProjectBudgetViewId)
+
+    if (!hasCurrentSelection) {
+      setHomeProjectBudgetViewId(availableProjectIds[0])
+    }
+  }, [projects, homeProjectBudgetViewId])
   const localTransferDetails = {
     title: t('transfer.title'),
     clientName: 'EDWIN FERNANDO PEREZ ALVARADO',
@@ -2964,53 +2995,87 @@ function App() {
                   <div>
                     <h2>Distribucion de rubros por proyecto</h2>
                     <p className="muted">
-                      Cada segmento representa el rubro total del proyecto.
+                      Selecciona un proyecto para ver como se distribuyen sus rubros.
                     </p>
                   </div>
+                  <label className="field mini-select">
+                    <span>Proyecto</span>
+                    <select
+                      className="select"
+                      value={selectedHomeProjectBudget?.proyecto_id ?? ''}
+                      onChange={(event) => setHomeProjectBudgetViewId(event.target.value)}
+                    >
+                      {homeProjectBudgetOptions.map((project) => (
+                        <option key={project.proyecto_id} value={project.proyecto_id}>
+                          {project.nombre_proyecto}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
-                {projectDonutSegments.length ? (
-                  <div className="project-donut-layout">
+                {selectedHomeProjectBudget && projectDonutSegments.length ? (
+                  <div className="project-donut-layout project-donut-layout-animated">
                     <div className="project-donut-wrap">
                       <svg
                         className="project-donut-chart"
                         viewBox="0 0 264 264"
                         role="img"
-                        aria-label="Grafico de dona por proyectos"
+                        aria-label="Grafico de dona de rubros por proyecto"
                       >
                         <circle className="project-donut-base" cx="132" cy="132" r="104" />
-                        {projectDonutSegments.map((project) => (
-                          <path key={project.projectId} d={project.path} fill={project.color} />
+                        {projectDonutSegments.map((budget, index) => (
+                          <path
+                            key={budget.budgetId}
+                            className="project-donut-segment"
+                            d={budget.path}
+                            fill={budget.color}
+                            style={{ animationDelay: `${0.2 + index * 0.18}s` }}
+                          />
                         ))}
                         <circle className="project-donut-hole" cx="132" cy="132" r="60" />
-                        <text className="project-donut-total-label" x="132" y="122" textAnchor="middle">
-                          Total
+                        <text className="project-donut-total-label project-donut-project-label" x="132" y="120" textAnchor="middle">
+                          Rubros
                         </text>
-                        <text className="project-donut-total-value" x="132" y="146" textAnchor="middle">
+                        <text className="project-donut-total-value" x="132" y="144" textAnchor="middle">
                           {formatNumberMask(projectDonutTotal)}
                         </text>
                       </svg>
+                      {selectedHomeProjectHasMixedCurrencies ? (
+                        <p className="project-area-note">
+                          Este proyecto mezcla monedas. Interpreta la proporcion visual con cuidado.
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="project-donut-legend">
-                      {projectDonutSegments.map((project) => (
-                        <article key={project.projectId} className="project-donut-item">
+                      {projectDonutSegments.map((budget, index) => (
+                        <article
+                          key={budget.budgetId}
+                          className="project-donut-item project-donut-item-animated"
+                          style={{ animationDelay: `${0.35 + index * 0.12}s` }}
+                        >
                           <span
                             className="project-donut-swatch"
-                            style={{ backgroundColor: project.color }}
+                            style={{ backgroundColor: budget.color }}
                             aria-hidden="true"
                           />
                           <div>
-                            <h4>{project.name}</h4>
-                            <p>{project.percent.toFixed(1)}% del total</p>
-                            <p>{formatMoney(project.total.toFixed(2), 'CRC')}</p>
+                            <h4>{budget.name}</h4>
+                            <p>{budget.percent.toFixed(1)}% del total del proyecto</p>
+                            <p>{formatMoney(budget.total.toFixed(2), budget.currency)}</p>
+                            <p>
+                              Estado: {budget.status} // Moneda: {budget.currency}
+                            </p>
                           </div>
                         </article>
                       ))}
                     </div>
                   </div>
+                ) : selectedHomeProjectBudget ? (
+                  <p className="empty">El proyecto seleccionado no tiene rubros con monto total para representar.</p>
                 ) : (
-                  <p className="empty">No hay proyectos activos con rubro total para representar en la dona.</p>
+                  <p className="empty">No hay proyectos disponibles para mostrar la distribucion de rubros.</p>
                 )}
               </article>
 
