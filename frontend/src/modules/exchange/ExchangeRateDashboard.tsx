@@ -86,6 +86,7 @@ export function ExchangeRateDashboard({
         return 0
       })
     : []
+  const featuredEntries = orderedEntries.filter((entry) => isFeaturedEntity(entry.entity))
 
   return (
     <section className="panel-stack">
@@ -150,6 +151,44 @@ export function ExchangeRateDashboard({
               <p className="health-meta">{data.report_date}</p>
             </article>
           </div>
+
+          <article className="card-group">
+            <div className="section-title">
+              <div>
+                <h2>Casas destacadas</h2>
+                <p className="muted">
+                  ARI Casa de Cambio Internacional S.A. y Banco Davivienda (Costa Rica) S.A.
+                </p>
+              </div>
+            </div>
+
+            {featuredEntries.length ? (
+              <div className="health-layout exchange-summary-layout">
+                {featuredEntries.map((entry) => (
+                  <article className="health-card exchange-highlight-card" key={`${entry.entity_type}-${entry.entity}`}>
+                    <h3>{entry.entity}</h3>
+                    <p className="health-meta">{entry.entity_type}</p>
+                    <p className="health-row">
+                      {t('exchangeDashboard.tableBuy')}:{' '}
+                      <span className="health-badge ok">CRC {formatRate(entry.buy_rate, locale)}</span>
+                    </p>
+                    <p className="health-row">
+                      {t('exchangeDashboard.tableSell')}:{' '}
+                      <span className="health-badge ok">CRC {formatRate(entry.sell_rate, locale)}</span>
+                    </p>
+                    <p className="health-meta">
+                      {t('exchangeDashboard.tableSpread')}: {formatRate(entry.spread, locale)}
+                    </p>
+                    <p className="health-meta">
+                      {t('exchangeDashboard.updatedAt')}: {formatTimestamp(entry.updated_at, locale)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="empty">No se encontraron esas dos entidades en la consulta actual.</p>
+            )}
+          </article>
 
           <article className="card-group">
             <div className="section-title">
