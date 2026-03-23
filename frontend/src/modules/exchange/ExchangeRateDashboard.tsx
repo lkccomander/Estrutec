@@ -37,16 +37,15 @@ type ExchangeRateDashboardProps = {
 }
 
 const FEATURED_ENTITIES = new Set([
-  'banco davivienda costa rica sa',
-  'ari casa de cambio internacional sa',
+  'bancodaviviendacostaricasa',
+  'aricasadecambiointernacionalsa',
 ])
 
 function normalizeEntityName(value: string) {
   return value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[().]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[^a-zA-Z0-9]/g, '')
     .trim()
     .toLowerCase()
 }
