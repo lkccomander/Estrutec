@@ -83,7 +83,12 @@ export function ExchangeRateDashboard({
           return leftFeatured - rightFeatured
         }
 
-        return 0
+        const entityTypeComparison = left.entity_type.localeCompare(right.entity_type, locale)
+        if (entityTypeComparison !== 0) {
+          return entityTypeComparison
+        }
+
+        return left.entity.localeCompare(right.entity, locale)
       })
     : []
   const featuredEntries = orderedEntries.filter((entry) => isFeaturedEntity(entry.entity))
@@ -169,12 +174,12 @@ export function ExchangeRateDashboard({
                     <h3>{entry.entity}</h3>
                     <p className="health-meta">{entry.entity_type}</p>
                     <p className="health-row">
-                      {t('exchangeDashboard.tableBuy')}:{' '}
-                      <span className="health-badge ok">CRC {formatRate(entry.buy_rate, locale)}</span>
-                    </p>
-                    <p className="health-row">
                       {t('exchangeDashboard.tableSell')}:{' '}
                       <span className="health-badge ok">CRC {formatRate(entry.sell_rate, locale)}</span>
+                    </p>
+                    <p className="health-row">
+                      {t('exchangeDashboard.tableBuy')}:{' '}
+                      <span className="health-badge ok">CRC {formatRate(entry.buy_rate, locale)}</span>
                     </p>
                     <p className="health-meta">
                       {t('exchangeDashboard.tableSpread')}: {formatRate(entry.spread, locale)}

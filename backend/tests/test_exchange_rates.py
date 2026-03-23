@@ -1,6 +1,13 @@
+import httpx
 from datetime import UTC, datetime
 
-from app.services.exchange_rates import ParsedExchangeRateEntry, _merge_entries, _parse_entries_from_table
+from app.services.exchange_rates import (
+    BCCR_EXCHANGE_RATES_URL,
+    ParsedExchangeRateEntry,
+    _fetch_bccr_html,
+    _merge_entries,
+    _parse_entries_from_table,
+)
 
 
 def test_merge_entries_preserves_missing_entities_from_secondary_source() -> None:
@@ -90,3 +97,38 @@ def test_parse_entries_from_table_supports_rows_without_repeated_entity_type() -
 
     assert "Banco Davivienda (Costa Rica) S.A" in names
     assert "ARI Casa de Cambio Internacional S.A." in names
+
+
+def test_fetch_bccr_html_retries_before_succeeding(monkeypatch) -> None:
+    attempts = {"count": 0}
+
+    class FakeResponse:
+        text = "<html>ok</html>"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def get(self, url: str):
+            assert url == BCCR_EXCHANGE_RATES_URL
+            attempts["count"] += 1
+            if attempts["count"] < 3:
+                raise httpx.ReadTimeout("timeout", request=httpx.Request("GET", url))
+            return FakeResponse()
+
+    monkeypatch.setattr("app.services.exchange_rates.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.exchange_rates.time.sleep", lambda _: None)
+
+    html = _fetch_bccr_html()
+
+    assert html == "<html>ok</html>"
+    assert attempts["count"] == 3

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -29,6 +30,8 @@ _ENTITY_TYPES = (
 )
 
 _TIMESTAMP_PATTERN = re.compile(r"\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}\s+[ap]\.m\.", re.IGNORECASE)
+_REQUEST_RETRY_ATTEMPTS = 3
+_REQUEST_RETRY_DELAY_SECONDS = 1.0
 
 
 class _BccrTableParser(HTMLParser):
@@ -242,18 +245,35 @@ def _parse_entries_from_lines(lines: list[str]) -> list[ParsedExchangeRateEntry]
     return entries
 
 
-def fetch_exchange_rate_dashboard() -> ExchangeRateDashboardRead:
+def _fetch_bccr_html() -> str:
+    timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
+    last_error: httpx.HTTPError | None = None
+
     with httpx.Client(
-        timeout=20.0,
+        timeout=timeout,
         follow_redirects=True,
         headers={"User-Agent": "Elatilo/1.0 (+https://github.com/lkccomander/Estrutec)"},
     ) as client:
-        response = client.get(BCCR_EXCHANGE_RATES_URL)
-        response.raise_for_status()
+        for attempt in range(1, _REQUEST_RETRY_ATTEMPTS + 1):
+            try:
+                response = client.get(BCCR_EXCHANGE_RATES_URL)
+                response.raise_for_status()
+                return response.text
+            except httpx.HTTPError as exc:
+                last_error = exc
+                if attempt == _REQUEST_RETRY_ATTEMPTS:
+                    break
+                time.sleep(_REQUEST_RETRY_DELAY_SECONDS)
 
-    lines = _sanitize_html(response.text)
+    assert last_error is not None
+    raise last_error
+
+
+def fetch_exchange_rate_dashboard() -> ExchangeRateDashboardRead:
+    response_html = _fetch_bccr_html()
+    lines = _sanitize_html(response_html)
     report_date = _extract_report_date(lines)
-    table_rows = _extract_table_rows(response.text)
+    table_rows = _extract_table_rows(response_html)
 
     table_entries: list[ParsedExchangeRateEntry] = []
     line_entries: list[ParsedExchangeRateEntry] = []
