@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.roles import UserRole
 
@@ -157,7 +157,26 @@ class AttachmentCreate(BaseModel):
     cdn_path: str
     nombre_archivo: str | None = None
     tipo_archivo: str | None = None
-    orden: int = 1
+    orden: int = Field(default=1, gt=0)
+
+    @field_validator("cdn_path")
+    @classmethod
+    def validate_cdn_path(cls, value: str) -> str:
+        normalized_value = value.strip()
+        if not normalized_value:
+            raise ValueError("El cdn_path es obligatorio.")
+        return normalized_value
+
+    @field_validator("nombre_archivo", "tipo_archivo")
+    @classmethod
+    def normalize_optional_metadata(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        normalized_value = value.strip()
+        if not normalized_value:
+            return None
+        return normalized_value
 
 
 class AttachmentRead(BaseModel):

@@ -1427,6 +1427,19 @@ h2 {
   margin: 0;
 }
 
+.attachment-link {
+  display: inline-block;
+  margin-top: 2px;
+  color: #93c5fd;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  word-break: break-all;
+}
+
+.attachment-link:hover {
+  color: #bfdbfe;
+}
+
 .record-note {
   margin-top: 4px !important;
   color: #fcd34d;
@@ -1793,6 +1806,14 @@ body.light-theme .dashboard-location-label {
   text-shadow:
     0 0 6px rgba(250, 204, 21, 0.45),
     0 0 14px rgba(234, 179, 8, 0.28);
+}
+
+body.light-theme .attachment-link {
+  color: #1d4ed8;
+}
+
+body.light-theme .attachment-link:hover {
+  color: #1e3a8a;
 }
 
 body.light-theme .sync-status {

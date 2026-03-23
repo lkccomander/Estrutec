@@ -3484,7 +3484,15 @@ function App() {
                     <div className="record-head">
                       <div>
                         <h3>{attachment.nombre_archivo ?? 'Adjunto sin nombre'}</h3>
-                        <p>{attachment.cdn_path}</p>
+                        <a
+                          className="attachment-link"
+                          href={attachment.cdn_path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={attachment.cdn_path}
+                        >
+                          {attachment.cdn_path}
+                        </a>
                         <p className="list-meta">
                           Comprobante:{' '}
                           {selectedReceipt?.numero_factura ||
