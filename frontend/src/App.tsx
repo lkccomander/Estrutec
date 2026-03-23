@@ -3393,7 +3393,7 @@ function App() {
 
           <article className="card-group">
             <div className="section-title">
-              <h2>Adjuntos del comprobante seleccionado</h2>
+              <h2>Comprobante adjunto</h2>
               <span className="list-meta">{attachments.length} archivos</span>
             </div>
             <div className="receipt-attachments-panel">
@@ -3494,10 +3494,8 @@ function App() {
                           {attachment.cdn_path}
                         </a>
                         <p className="list-meta">
-                          Comprobante:{' '}
-                          {selectedReceipt?.numero_factura ||
-                            selectedReceipt?.negocio ||
-                            selectedReceiptId}
+                          {selectedReceipt?.numero_factura || 'Sin factura'} //{' '}
+                          {selectedReceipt?.negocio || 'Sin negocio'}
                         </p>
                       </div>
                       <button
