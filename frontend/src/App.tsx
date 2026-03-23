@@ -3607,8 +3607,22 @@ function App() {
 
           <article className="card-group">
             <div className="section-title">
+              <h2>Comprobantes pendientes</h2>
+              <span className="list-meta">Pendientes de revision y gestion</span>
+            </div>
+            <div className="receipt-stack">
+              {renderReceiptTable(
+                'Comprobantes pendientes',
+                pendingBudgetReceipts,
+                'No hay comprobantes pendientes para este rubro.',
+              )}
+            </div>
+          </article>
+
+          <article className="card-group">
+            <div className="section-title">
               <h2>Comprobantes</h2>
-              <span className="list-meta">Aprobados, pendientes, rechazados y sus adjuntos</span>
+              <span className="list-meta">Aprobados y rechazados del rubro seleccionado</span>
             </div>
             <div className="receipt-stack">
               {renderReceiptTable(
@@ -3620,11 +3634,6 @@ function App() {
                   onClick: () => void handleExportApprovedReceipts(),
                   disabled: isExportingApproved || approvedBudgetReceipts.length === 0,
                 },
-              )}
-              {renderReceiptTable(
-                'Comprobantes pendientes',
-                pendingBudgetReceipts,
-                'No hay comprobantes pendientes para este rubro.',
               )}
               {renderReceiptTable(
                 'Comprobantes rechazados',
