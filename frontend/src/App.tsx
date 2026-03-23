@@ -692,6 +692,19 @@ function App() {
             : Number(receiptForm.monto_gasto) * Number(receiptForm.tipo_cambio)
         ).toFixed(2)
       : null
+  const ariExchangeEntry =
+    exchangeRateDashboard?.entries.find(
+      (entry) => entry.entity === 'ARI Casa de Cambio Internacional S.A.',
+    ) ?? null
+  const ariExchangeTooltip = ariExchangeEntry
+    ? [
+        'ARI Casa de Cambio Internacional S.A.',
+        `Compra: CRC ${ariExchangeEntry.buy_rate.toFixed(2)}`,
+        `Venta: CRC ${ariExchangeEntry.sell_rate.toFixed(2)}`,
+        `Diferencial: ${ariExchangeEntry.spread.toFixed(2)}`,
+        `Actualizado: ${new Date(ariExchangeEntry.updated_at).toLocaleString('es-CR')}`,
+      ].join('\n')
+    : 'No hay valores actuales de ARI Casa de Cambio Internacional S.A. disponibles.'
 
   function compareReceiptsByDateDesc(left: Receipt, right: Receipt) {
     const leftTime = new Date(left.fecha).getTime()
@@ -3405,12 +3418,13 @@ function App() {
               </label>
               {requiresExchangeRate ? (
                 <label className="field">
-                  <span>{t('receiptForm.exchangeRate')}</span>
+                  <span title={ariExchangeTooltip}>{t('receiptForm.exchangeRate')}</span>
                   <input
                     className="input"
                     type="number"
                     min="0"
                     step="0.000001"
+                    title={ariExchangeTooltip}
                     value={receiptForm.tipo_cambio}
                     onChange={(event) =>
                       setReceiptForm((current) => ({
