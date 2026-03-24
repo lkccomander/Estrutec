@@ -61,6 +61,37 @@ type ProjectsDashboardProps = {
   onOpenBudgets: (projectId: string) => void
 }
 
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  }
+}
+
+function describeDonutArc(
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const startOuter = polarToCartesian(centerX, centerY, outerRadius, endAngle)
+  const endOuter = polarToCartesian(centerX, centerY, outerRadius, startAngle)
+  const startInner = polarToCartesian(centerX, centerY, innerRadius, endAngle)
+  const endInner = polarToCartesian(centerX, centerY, innerRadius, startAngle)
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1'
+
+  return [
+    `M ${startOuter.x} ${startOuter.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${endOuter.x} ${endOuter.y}`,
+    `L ${endInner.x} ${endInner.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${startInner.x} ${startInner.y}`,
+    'Z',
+  ].join(' ')
+}
+
 export function ProjectsDashboard({
   projects,
   budgets,
@@ -150,6 +181,23 @@ export function ProjectsDashboard({
       toneClass: 'project-dashboard-stat-consumed',
     },
   ]
+  const donutColors = ['#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af']
+  const donutTotal = budgetChartRows.reduce((sum, budget) => sum + budget.total, 0)
+  let accumulatedAngle = 0
+  const donutSegments = budgetChartRows.map((budget, index) => {
+    const percent = donutTotal > 0 ? (budget.total / donutTotal) * 100 : 0
+    const sweep = donutTotal > 0 ? (budget.total / donutTotal) * 360 : 0
+    const startAngle = accumulatedAngle
+    const endAngle = accumulatedAngle + sweep
+    accumulatedAngle = endAngle
+
+    return {
+      ...budget,
+      percent,
+      color: donutColors[index % donutColors.length],
+      path: describeDonutArc(132, 132, 104, 60, startAngle, endAngle),
+    }
+  })
 
   return (
     <section className="panel-stack">
@@ -343,47 +391,54 @@ export function ProjectsDashboard({
         </div>
         {budgetChartRows.length ? (
           <div className="project-area-chart-shell project-dashboard-spline-shell">
-            <div className="project-area-chart-header">
-              <span className="project-area-chart-badge project-line-badge project-balance-badge">
-                Disponible
-              </span>
-              <span className="project-area-chart-badge project-total-badge project-budget-blue-badge">
-                Consumido
-              </span>
-            </div>
-            <div className="project-normalized-chart" role="img" aria-label="Normalized stacked bar chart de rubros por fecha">
-              <div className="project-normalized-y-axis" aria-hidden="true">
-                {[100, 75, 50, 25, 0].map((tick) => (
-                  <span key={tick}>{tick}%</span>
-                ))}
-              </div>
-              <div className="project-normalized-plot">
-                {[100, 75, 50, 25, 0].map((tick) => (
-                  <div className="project-normalized-grid-line" key={tick} style={{ bottom: `${tick}%` }} />
-                ))}
-                <div className="project-normalized-bars">
-                  {budgetChartRows.map((budget) => (
-                    <div className="project-normalized-bar-group" key={budget.presupuesto_id}>
-                      <div
-                        className="project-normalized-bar"
-                        title={`${budget.categoria}: ${budget.availablePercent.toFixed(1)}% disponible / ${budget.consumedPercent.toFixed(1)}% consumido`}
-                      >
-                        <div
-                          className="project-normalized-segment project-normalized-segment-consumed"
-                          style={{ height: `${budget.consumedPercent}%` }}
-                        />
-                        <div
-                          className="project-normalized-segment project-normalized-segment-available"
-                          style={{ height: `${budget.availablePercent}%` }}
-                        />
-                      </div>
-                      <p className="project-normalized-date">{budget.dateLabel}</p>
-                      <p className="project-normalized-label" title={budget.categoria}>
-                        {budget.categoria}
-                      </p>
-                    </div>
+            <div className="project-donut-layout project-donut-layout-animated">
+              <div className="project-donut-wrap">
+                <svg
+                  className="project-donut-chart"
+                  viewBox="0 0 264 264"
+                  role="img"
+                  aria-label="Grafico de dona de rubros del proyecto seleccionado"
+                >
+                  <circle className="project-donut-base" cx="132" cy="132" r="104" />
+                  {donutSegments.map((budget, index) => (
+                    <path
+                      key={budget.presupuesto_id}
+                      className="project-donut-segment"
+                      d={budget.path}
+                      fill={budget.color}
+                      style={{ animationDelay: `${0.2 + index * 0.12}s` }}
+                    />
                   ))}
-                </div>
+                  <circle className="project-donut-hole" cx="132" cy="132" r="60" />
+                  <text className="project-donut-total-label project-donut-project-label" x="132" y="120" textAnchor="middle">
+                    Rubros
+                  </text>
+                  <text className="project-donut-total-value" x="132" y="144" textAnchor="middle">
+                    {budgetChartRows.length}
+                  </text>
+                </svg>
+              </div>
+
+              <div className="project-donut-legend">
+                {donutSegments.map((budget, index) => (
+                  <article
+                    key={budget.presupuesto_id}
+                    className="project-donut-item project-donut-item-animated"
+                    style={{ animationDelay: `${0.28 + index * 0.08}s` }}
+                  >
+                    <span
+                      className="project-donut-swatch"
+                      style={{ backgroundColor: budget.color }}
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <h4>{budget.categoria}</h4>
+                      <p>{budget.percent.toFixed(1)}% del total del proyecto</p>
+                      <p>Total {formatProjectTotal(budget.total.toFixed(2))}</p>
+                      <p>Disponible {formatProjectTotal(budget.balance.toFixed(2))}</p>
+                    </div>
+                  </article>
+                ))}
               </div>
             </div>
 
@@ -397,7 +452,7 @@ export function ProjectsDashboard({
             </div>
           </div>
         ) : selectedProjectId ? (
-          <p className="empty">El proyecto seleccionado no tiene rubros para representar en el spline chart.</p>
+          <p className="empty">El proyecto seleccionado no tiene rubros para representar en el grafico de dona.</p>
         ) : null}
         <div className="list-scroll">
           {projectPlotRows.map((project) => (
