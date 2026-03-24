@@ -1,4 +1,6 @@
 Run npm run lint
+  npm run lint
+  shell: /usr/bin/bash -e {0}
 
 > frontend@0.0.0 lint
 > eslint .
@@ -8,18 +10,7 @@ Run npm run lint
 Warning:   998:6  warning  React Hook useEffect has a missing dependency: 'loadProtectedData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 /home/runner/work/Estrutec/Estrutec/frontend/src/modules/projects/ProjectsDashboard.tsx
-  192:5  error  Error: Cannot reassign variable after render completes
-
-Reassigning `accumulatedAngle` after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.
-
-/home/runner/work/Estrutec/Estrutec/frontend/src/modules/projects/ProjectsDashboard.tsx:192:5
-  190 |     const startAngle = accumulatedAngle
-  191 |     const endAngle = accumulatedAngle + sweep
-> 192 |     accumulatedAngle = endAngle
-      |     ^^^^^^^^^^^^^^^^ Cannot reassign `accumulatedAngle` after render completes
-  193 |
-  194 |     return {
-  195 |       ...budget,  react-hooks/immutability
+Error:   207:66  error  '_endAngle' is defined but never used  @typescript-eslint/no-unused-vars
 
 ✖ 2 problems (1 error, 1 warning)
 

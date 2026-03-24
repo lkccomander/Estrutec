@@ -204,7 +204,11 @@ export function ProjectsDashboard({
 
     return segments
   }, [])
-  const donutSegments = donutSegmentsWithAngles.map(({ endAngle: _endAngle, ...segment }) => segment)
+  const donutSegments = donutSegmentsWithAngles.map((segment) => {
+    const { endAngle, ...rest } = segment
+    void endAngle
+    return rest
+  })
 
   return (
     <section className="panel-stack">
