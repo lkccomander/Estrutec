@@ -1534,7 +1534,7 @@ h2 {
 .excel-list-header,
 .excel-row {
   display: grid;
-  grid-template-columns: 110px 120px 1.4fr 140px 140px 140px 180px 120px;
+  grid-template-columns: 110px 120px 1.3fr 190px 140px 140px 180px 120px;
   gap: 8px;
   align-items: center;
 }
@@ -1580,7 +1580,10 @@ h2 {
 }
 
 .excel-type {
+  display: block;
   white-space: normal;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .excel-row > .excel-amount {

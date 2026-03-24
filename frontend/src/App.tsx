@@ -191,6 +191,19 @@ function formatReceiptTypeLabel(type: ReceiptType) {
   }
 }
 
+function formatReceiptTypeCompactLabel(type: ReceiptType) {
+  switch (type) {
+    case 'FACTURA_FOTO':
+      return 'FACTURA FOTO'
+    case 'SINPE_MOVIL':
+      return 'SINPE MOVIL'
+    case 'CAJA_CHICA':
+      return 'CAJA CHICA'
+    default:
+      return type
+  }
+}
+
 function formatMoney(amount: string, currency: Currency) {
   return new Intl.NumberFormat('es-CR', {
     style: 'currency',
@@ -1209,8 +1222,9 @@ function App() {
                       ? 'excel-type excel-type-funding'
                       : 'excel-type excel-type-expense'
                   }
+                  title={formatReceiptTypeLabel(receipt.tipo_comprobante)}
                 >
-                  {formatReceiptTypeLabel(receipt.tipo_comprobante)}
+                  {formatReceiptTypeCompactLabel(receipt.tipo_comprobante)}
                 </span>
                 <span
                   className={
