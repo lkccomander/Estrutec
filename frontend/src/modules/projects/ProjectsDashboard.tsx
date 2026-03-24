@@ -28,6 +28,7 @@ type Budget = {
   moneda: 'CRC' | 'USD'
   saldo_disponible: string
   estado: string
+  created_at: string
 }
 
 type ProjectForm = {
@@ -154,11 +155,17 @@ export function ProjectsDashboard({
   const selectedProjectBudgets = selectedProjectId
     ? budgets.filter((budget) => budget.proyecto_id === selectedProjectId)
     : []
-  const budgetChartRows = selectedProjectBudgets.map((budget) => ({
-    ...budget,
-    total: Number(budget.monto_total),
-    balance: Number(budget.saldo_disponible),
-  }))
+  const budgetChartRows = [...selectedProjectBudgets]
+    .sort((left, right) => left.created_at.localeCompare(right.created_at))
+    .map((budget) => ({
+      ...budget,
+      total: Number(budget.monto_total),
+      balance: Number(budget.saldo_disponible),
+      dateLabel: new Date(budget.created_at).toLocaleDateString('es-CR', {
+        day: '2-digit',
+        month: '2-digit',
+      }),
+    }))
   const chartWidth = 900
   const chartHeight = 320
   const chartPadding = { top: 26, right: 24, bottom: 54, left: 58 }
@@ -410,7 +417,7 @@ export function ProjectsDashboard({
               className="project-area-chart"
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
               role="img"
-              aria-label="Spline area chart de rubros del proyecto seleccionado"
+              aria-label="Spline area chart de rubros por fecha y monto"
             >
               <defs>
                 <linearGradient id="projectTotalAreaFill" x1="0" y1="0" x2="0" y2="1">
@@ -482,7 +489,7 @@ export function ProjectsDashboard({
                     y={chartHeight - 18}
                     textAnchor="middle"
                   >
-                    {budget.categoria.slice(0, 10)}
+                    {budget.dateLabel}
                   </text>
                 )
               })}
