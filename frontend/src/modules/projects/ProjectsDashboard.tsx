@@ -3,11 +3,6 @@ import { HiOutlineClipboardDocumentList } from 'react-icons/hi2'
 import { PiPiggyBankBold } from 'react-icons/pi'
 import { ActionFeedback } from '../../components/ActionFeedback'
 
-type ChartPoint = {
-  x: number
-  y: number
-}
-
 type Project = {
   proyecto_id: string
   nombre_proyecto: string
@@ -66,46 +61,6 @@ type ProjectsDashboardProps = {
   onOpenBudgets: (projectId: string) => void
 }
 
-function buildSplinePath(points: ChartPoint[]) {
-  if (!points.length) {
-    return ''
-  }
-
-  if (points.length === 1) {
-    return `M ${points[0].x} ${points[0].y}`
-  }
-
-  let path = `M ${points[0].x} ${points[0].y}`
-
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const previous = points[index - 1] ?? points[index]
-    const current = points[index]
-    const next = points[index + 1]
-    const following = points[index + 2] ?? next
-
-    const controlPointOneX = current.x + (next.x - previous.x) / 6
-    const controlPointOneY = current.y + (next.y - previous.y) / 6
-    const controlPointTwoX = next.x - (following.x - current.x) / 6
-    const controlPointTwoY = next.y - (following.y - current.y) / 6
-
-    path += ` C ${controlPointOneX} ${controlPointOneY}, ${controlPointTwoX} ${controlPointTwoY}, ${next.x} ${next.y}`
-  }
-
-  return path
-}
-
-function buildSplineAreaPath(points: ChartPoint[], baselineY: number) {
-  if (!points.length) {
-    return ''
-  }
-
-  const linePath = buildSplinePath(points)
-  const firstPoint = points[0]
-  const lastPoint = points[points.length - 1]
-
-  return `${linePath} L ${lastPoint.x} ${baselineY} L ${firstPoint.x} ${baselineY} Z`
-}
-
 export function ProjectsDashboard({
   projects,
   budgets,
@@ -161,36 +116,20 @@ export function ProjectsDashboard({
       ...budget,
       total: Number(budget.monto_total),
       balance: Number(budget.saldo_disponible),
+      consumed: Math.max(Number(budget.monto_total) - Number(budget.saldo_disponible), 0),
+      availablePercent:
+        Number(budget.monto_total) > 0
+          ? (Number(budget.saldo_disponible) / Number(budget.monto_total)) * 100
+          : 0,
+      consumedPercent:
+        Number(budget.monto_total) > 0
+          ? ((Number(budget.monto_total) - Number(budget.saldo_disponible)) / Number(budget.monto_total)) * 100
+          : 0,
       dateLabel: new Date(budget.created_at).toLocaleDateString('es-CR', {
         day: '2-digit',
         month: '2-digit',
       }),
     }))
-  const chartWidth = 900
-  const chartHeight = 320
-  const chartPadding = { top: 26, right: 24, bottom: 54, left: 58 }
-  const chartInnerWidth = chartWidth - chartPadding.left - chartPadding.right
-  const chartInnerHeight = chartHeight - chartPadding.top - chartPadding.bottom
-  const chartMaxValue = Math.max(...budgetChartRows.map((budget) => budget.total), 1)
-  const chartStepX =
-    budgetChartRows.length > 1 ? chartInnerWidth / Math.max(budgetChartRows.length - 1, 1) : 0
-  const chartBaselineY = chartPadding.top + chartInnerHeight
-  const totalSeriesPoints = budgetChartRows.map((budget, index) => ({
-    x:
-      chartPadding.left +
-      (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
-    y: chartBaselineY - (budget.total / chartMaxValue) * chartInnerHeight,
-  }))
-  const balanceSeriesPoints = budgetChartRows.map((budget, index) => ({
-    x:
-      chartPadding.left +
-      (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
-    y: chartBaselineY - (budget.balance / chartMaxValue) * chartInnerHeight,
-  }))
-  const totalSplinePath = buildSplinePath(totalSeriesPoints)
-  const balanceSplinePath = buildSplinePath(balanceSeriesPoints)
-  const totalAreaPath = buildSplineAreaPath(totalSeriesPoints, chartBaselineY)
-  const balanceAreaPath = buildSplineAreaPath(balanceSeriesPoints, chartBaselineY)
   const chartStats = [
     {
       label: 'Total rubros',
@@ -406,94 +345,47 @@ export function ProjectsDashboard({
           <div className="project-area-chart-shell project-dashboard-spline-shell">
             <div className="project-area-chart-header">
               <span className="project-area-chart-badge project-line-badge project-balance-badge">
-                Saldo disponible
+                Disponible
               </span>
               <span className="project-area-chart-badge project-total-badge project-budget-blue-badge">
-                Monto total
+                Consumido
               </span>
             </div>
-
-            <svg
-              className="project-area-chart"
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              role="img"
-              aria-label="Spline area chart de rubros por fecha y monto"
-            >
-              <defs>
-                <linearGradient id="projectTotalAreaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.52" />
-                  <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="projectBalanceAreaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1d4ed8" stopOpacity="0.48" />
-                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.06" />
-                </linearGradient>
-              </defs>
-
-              {[0, 1, 2, 3, 4].map((step) => {
-                const y = chartPadding.top + (chartInnerHeight / 4) * step
-                const value = ((chartMaxValue * (4 - step)) / 4).toFixed(0)
-
-                return (
-                  <g key={step}>
-                    <line
-                      className="project-area-grid-line"
-                      x1={chartPadding.left}
-                      y1={y}
-                      x2={chartWidth - chartPadding.right}
-                      y2={y}
-                    />
-                    <text className="project-area-axis-label" x={chartPadding.left - 10} y={y + 4}>
-                      {value}
-                    </text>
-                  </g>
-                )
-              })}
-
-              <path className="project-spline-area project-spline-area-total" d={totalAreaPath} />
-              <path className="project-spline-area project-spline-area-balance" d={balanceAreaPath} />
-              <path className="project-total-line project-spline-line project-budget-total-line" d={totalSplinePath} />
-              <path className="project-history-line project-spline-line" d={balanceSplinePath} style={{ stroke: '#1d4ed8' }} />
-
-              {totalSeriesPoints.map((point, index) => (
-                <circle
-                  key={`total-${budgetChartRows[index].presupuesto_id}`}
-                  className="project-total-point"
-                  cx={point.x}
-                  cy={point.y}
-                  r="3"
-                  style={{ fill: '#60a5fa', animationDelay: `${0.18 + index * 0.05}s` }}
-                />
-              ))}
-              {balanceSeriesPoints.map((point, index) => (
-                <circle
-                  key={`balance-${budgetChartRows[index].presupuesto_id}`}
-                  className="project-history-point"
-                  cx={point.x}
-                  cy={point.y}
-                  r="3.5"
-                  style={{ fill: '#1d4ed8', animationDelay: `${0.24 + index * 0.05}s` }}
-                />
-              ))}
-
-              {budgetChartRows.map((budget, index) => {
-                const x =
-                  chartPadding.left +
-                  (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index)
-
-                return (
-                  <text
-                    key={budget.presupuesto_id}
-                    className="project-area-x-label"
-                    x={x}
-                    y={chartHeight - 18}
-                    textAnchor="middle"
-                  >
-                    {budget.dateLabel}
-                  </text>
-                )
-              })}
-            </svg>
+            <div className="project-normalized-chart" role="img" aria-label="Normalized stacked bar chart de rubros por fecha">
+              <div className="project-normalized-y-axis" aria-hidden="true">
+                {[100, 75, 50, 25, 0].map((tick) => (
+                  <span key={tick}>{tick}%</span>
+                ))}
+              </div>
+              <div className="project-normalized-plot">
+                {[100, 75, 50, 25, 0].map((tick) => (
+                  <div className="project-normalized-grid-line" key={tick} style={{ bottom: `${tick}%` }} />
+                ))}
+                <div className="project-normalized-bars">
+                  {budgetChartRows.map((budget) => (
+                    <div className="project-normalized-bar-group" key={budget.presupuesto_id}>
+                      <div
+                        className="project-normalized-bar"
+                        title={`${budget.categoria}: ${budget.availablePercent.toFixed(1)}% disponible / ${budget.consumedPercent.toFixed(1)}% consumido`}
+                      >
+                        <div
+                          className="project-normalized-segment project-normalized-segment-consumed"
+                          style={{ height: `${budget.consumedPercent}%` }}
+                        />
+                        <div
+                          className="project-normalized-segment project-normalized-segment-available"
+                          style={{ height: `${budget.availablePercent}%` }}
+                        />
+                      </div>
+                      <p className="project-normalized-date">{budget.dateLabel}</p>
+                      <p className="project-normalized-label" title={budget.categoria}>
+                        {budget.categoria}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <div className="project-area-chart-footer">
               {chartStats.map((stat) => (

@@ -776,6 +776,103 @@ h2 {
   display: block;
 }
 
+.project-normalized-chart {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 320px;
+}
+
+.project-normalized-y-axis {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  justify-items: end;
+  color: #94a3b8;
+  font-size: 11px;
+  padding: 8px 0 30px;
+}
+
+.project-normalized-plot {
+  position: relative;
+  min-height: 320px;
+  border-radius: 16px;
+  padding: 10px 12px 0;
+  background: rgba(15, 23, 42, 0.46);
+  border: 1px solid rgba(35, 50, 75, 0.88);
+}
+
+.project-normalized-grid-line {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.project-normalized-bars {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.project-normalized-bar-group {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-content: end;
+  min-width: 0;
+}
+
+.project-normalized-bar {
+  width: min(56px, 100%);
+  height: 220px;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  border-radius: 16px 16px 10px 10px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.84);
+  border: 1px solid rgba(51, 65, 85, 0.95);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.project-normalized-segment {
+  width: 100%;
+  transition: height 260ms ease;
+}
+
+.project-normalized-segment-consumed {
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+}
+
+.project-normalized-segment-available {
+  background: linear-gradient(180deg, #bfdbfe, #93c5fd);
+}
+
+.project-normalized-date,
+.project-normalized-label {
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.project-normalized-date {
+  color: #dbeafe;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.project-normalized-label {
+  color: #94a3b8;
+  font-size: 0.76rem;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
 .project-spline-area {
   opacity: 0.22;
 }
