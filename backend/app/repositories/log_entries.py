@@ -68,7 +68,10 @@ class LogEntryRepository:
                     l.usuario_id,
                     u.nombre AS autor_nombre,
                     u.email AS autor_email,
-                    l.created_at
+                    l.created_at,
+                    l.estado,
+                    l.comentario_estado,
+                    l.updated_at
                 FROM log_entry l
                 JOIN usuario u ON u.usuario_id = l.usuario_id
                 WHERE l.log_id = %s
