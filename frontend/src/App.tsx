@@ -212,6 +212,15 @@ function formatMoney(amount: string, currency: Currency) {
   }).format(Number(amount))
 }
 
+function parseExcelDate(value?: string | null) {
+  if (!value) {
+    return null
+  }
+
+  const parsed = new Date(`${value}T00:00:00`)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 function formatGroupedMoney(entries: Array<{ amount: string; currency: Currency }>) {
   const totals = entries.reduce<Record<Currency, number>>(
     (accumulator, entry) => {
@@ -1854,9 +1863,8 @@ function App() {
         }),
       )
       const attachmentsMap = new Map(attachmentsByReceipt)
-      const budgetCurrency = selectedBudgetDetails?.moneda ?? 'CRC'
       const rows = approvedBudgetReceipts.map((receipt) => ({
-        Fecha: receipt.fecha,
+        Fecha: parseExcelDate(receipt.fecha),
         Factura: receipt.numero_factura ?? '',
         Negocio: receipt.negocio,
         Cedula: receipt.cedula ?? '',
@@ -1866,22 +1874,23 @@ function App() {
         Moneda: receipt.moneda,
         'Monto del gasto':
           receipt.tipo_comprobante === 'CAJA_CHICA'
-            ? ''
-            : formatMoney(receipt.monto_gasto, receipt.moneda),
+            ? null
+            : Number(receipt.monto_gasto),
         'Monto rubro':
           receipt.tipo_comprobante === 'CAJA_CHICA' && receipt.monto_presupuesto
-            ? formatMoney(receipt.monto_presupuesto, budgetCurrency)
-            : '',
-        Balance: receipt.balance ? Number(receipt.balance) : '',
+            ? Number(receipt.monto_presupuesto)
+            : null,
+        Balance: receipt.balance ? Number(receipt.balance) : null,
         Estado: receipt.estado,
         Observacion: receipt.observacion ?? '',
         'Paths adjuntos': (attachmentsMap.get(receipt.comprobante_id) ?? [])
           .map((attachment) => attachment.cdn_path)
           .join(' | '),
       }))
-      const worksheet = XLSX.utils.json_to_sheet(rows)
+      const worksheet = XLSX.utils.json_to_sheet(rows, { cellDates: true })
       const range = XLSX.utils.decode_range(worksheet['!ref'] ?? 'A1')
       const headerRow = 0
+      let fechaColumn = -1
       let tipoColumn = -1
       let categoriaColumn = -1
       let montoColumn = -1
@@ -1892,7 +1901,9 @@ function App() {
         const cellAddress = XLSX.utils.encode_cell({ r: headerRow, c: col })
         const cellValue = worksheet[cellAddress]?.v
 
-        if (cellValue === 'Tipo') {
+        if (cellValue === 'Fecha') {
+          fechaColumn = col
+        } else if (cellValue === 'Tipo') {
           tipoColumn = col
         } else if (cellValue === 'Categoria') {
           categoriaColumn = col
@@ -1915,10 +1926,28 @@ function App() {
       }
 
       for (let row = 1; row <= range.e.r; row += 1) {
-        const tipoCellAddress = XLSX.utils.encode_cell({ r: row, c: tipoColumn })
-        const tipoValue = worksheet[tipoCellAddress]?.v
+        if (fechaColumn >= 0) {
+          const fechaCellAddress = XLSX.utils.encode_cell({ r: row, c: fechaColumn })
+          if (worksheet[fechaCellAddress]) {
+            worksheet[fechaCellAddress].z = 'yyyy-mm-dd'
+          }
+        }
 
-        if (tipoValue === 'CAJA_CHICA') {
+        ;[montoColumn, montoPresupuestoColumn, balanceColumn].forEach((column) => {
+          if (column < 0) {
+            return
+          }
+
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: column })
+          if (worksheet[cellAddress] && typeof worksheet[cellAddress].v === 'number') {
+            worksheet[cellAddress].z = '#,##0.00'
+          }
+        })
+
+        const tipoCellAddress = XLSX.utils.encode_cell({ r: row, c: tipoColumn })
+        const tipoValue = String(worksheet[tipoCellAddress]?.v ?? '')
+
+        if (tipoValue.includes('CAJA CHICA')) {
           ;[tipoColumn, categoriaColumn, montoPresupuestoColumn, balanceColumn].forEach((column) => {
             if (column < 0) {
               return
