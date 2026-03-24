@@ -183,21 +183,28 @@ export function ProjectsDashboard({
   ]
   const donutColors = ['#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af']
   const donutTotal = budgetChartRows.reduce((sum, budget) => sum + budget.total, 0)
-  let accumulatedAngle = 0
-  const donutSegments = budgetChartRows.map((budget, index) => {
+  const donutSegmentsWithAngles = budgetChartRows.reduce<Array<(typeof budgetChartRows)[number] & {
+    percent: number
+    color: string
+    path: string
+    endAngle: number
+  }>>((segments, budget, index) => {
     const percent = donutTotal > 0 ? (budget.total / donutTotal) * 100 : 0
     const sweep = donutTotal > 0 ? (budget.total / donutTotal) * 360 : 0
-    const startAngle = accumulatedAngle
-    const endAngle = accumulatedAngle + sweep
-    accumulatedAngle = endAngle
+    const startAngle = segments.length > 0 ? segments[segments.length - 1].endAngle : 0
+    const endAngle = startAngle + sweep
 
-    return {
+    segments.push({
       ...budget,
       percent,
       color: donutColors[index % donutColors.length],
       path: describeDonutArc(132, 132, 104, 60, startAngle, endAngle),
-    }
-  })
+      endAngle,
+    })
+
+    return segments
+  }, [])
+  const donutSegments = donutSegmentsWithAngles.map(({ endAngle: _endAngle, ...segment }) => segment)
 
   return (
     <section className="panel-stack">

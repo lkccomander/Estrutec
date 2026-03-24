@@ -1,2 +1,26 @@
-Deploy frontend to Railway
-Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Run npm run lint
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/home/runner/work/Estrutec/Estrutec/frontend/src/App.tsx
+Warning:   998:6  warning  React Hook useEffect has a missing dependency: 'loadProtectedData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/work/Estrutec/Estrutec/frontend/src/modules/projects/ProjectsDashboard.tsx
+  192:5  error  Error: Cannot reassign variable after render completes
+
+Reassigning `accumulatedAngle` after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+/home/runner/work/Estrutec/Estrutec/frontend/src/modules/projects/ProjectsDashboard.tsx:192:5
+  190 |     const startAngle = accumulatedAngle
+  191 |     const endAngle = accumulatedAngle + sweep
+> 192 |     accumulatedAngle = endAngle
+      |     ^^^^^^^^^^^^^^^^ Cannot reassign `accumulatedAngle` after render completes
+  193 |
+  194 |     return {
+  195 |       ...budget,  react-hooks/immutability
+
+✖ 2 problems (1 error, 1 warning)
+
+Error: Process completed with exit code 1.
