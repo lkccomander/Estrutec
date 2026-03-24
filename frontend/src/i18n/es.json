@@ -63,7 +63,9 @@
     "backToBudgets": "Volver a rubros"
   },
   "receiptForm": {
-    "exchangeRate": "Tipo de cambio"
+    "exchangeRate": "Tipo de cambio",
+    "showAttachments": "Mostrar adjuntos",
+    "hideAttachments": "Ocultar adjuntos"
   },
   "exchangeDashboard": {
     "title": "Tipo de cambio BCCR",

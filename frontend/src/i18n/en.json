@@ -63,7 +63,9 @@
     "backToBudgets": "Back to CostCategories"
   },
   "receiptForm": {
-    "exchangeRate": "Exchange rate"
+    "exchangeRate": "Exchange rate",
+    "showAttachments": "Show attachments",
+    "hideAttachments": "Hide attachments"
   },
   "exchangeDashboard": {
     "title": "BCCR exchange rates",

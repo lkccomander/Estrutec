@@ -370,6 +370,7 @@ function App() {
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedBudgetId, setSelectedBudgetId] = useState('')
   const [selectedReceiptId, setSelectedReceiptId] = useState('')
+  const [expandedReceiptAttachmentsId, setExpandedReceiptAttachmentsId] = useState('')
   const [selectedUserId, setSelectedUserId] = useState('')
   const [projectHistoryOffset, setProjectHistoryOffset] = useState(0)
   const [hiddenProjectHistoryIds, setHiddenProjectHistoryIds] = useState<string[]>([])
@@ -1337,15 +1338,25 @@ function App() {
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation()
+                        if (expandedReceiptAttachmentsId === receipt.comprobante_id) {
+                          setExpandedReceiptAttachmentsId('')
+                          return
+                        }
                         setSelectedReceiptId(receipt.comprobante_id)
+                        setExpandedReceiptAttachmentsId(receipt.comprobante_id)
                       }}
                     >
                       <span className="button-with-icon">
                         <MdAttachFile aria-hidden="true" />
-                        <span>Show attachments</span>
+                        <span>
+                          {expandedReceiptAttachmentsId === receipt.comprobante_id
+                            ? t('receiptForm.hideAttachments')
+                            : t('receiptForm.showAttachments')}
+                        </span>
                       </span>
                     </button>
-                    {selectedReceiptId === receipt.comprobante_id ? (
+                    {selectedReceiptId === receipt.comprobante_id &&
+                    expandedReceiptAttachmentsId === receipt.comprobante_id ? (
                       attachments.length ? (
                         <div className="receipt-attachment-inline-list">
                           {attachments.map((attachment) => (
