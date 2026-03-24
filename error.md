@@ -1,10 +1,1 @@
-Comment on lines +696 to +698
-    exchangeRateDashboard?.entries.find(
-      (entry) => entry.entity === 'ARI Casa de Cambio Internacional S.A.',
-    ) ?? null
-@chatgpt-codex-connector
-chatgpt-codex-connector bot
-2 minutes ago
-P2 Badge Normalize the ARI entity lookup for the tooltip
-
-This lookup only succeeds when entry.entity matches the hard-coded text byte-for-byte. The exchange-rate dashboard already normalizes entity names before treating them as the same institution (normalizeEntityName/isFeaturedEntity in frontend/src/modules/exchange/ExchangeRateDashboard.tsx), while the scraper preserves raw source names, so any punctuation/casing change in the BCCR feed will make the receipt form fall back to “No hay valores...” even though the ARI row is still present elsewhere in the UI. Matching on the normalized name here would keep the tooltip consistent with the dashboard.
+No se pudo conectar a PostgreSQL: 3 validation errors: {'type': 'missing', 'loc': ('response', 'estado'), 'msg': 'Field required', 'input': {'log_id': UUID('0a0469d9-7628-4eb9-9394-ca8215880d36'), 'mensaje': 'Se puede poner el grafico de queque dentro de proyectos', 'usuario_id': UUID('5fc2a19e-8044-4e43-bfd9-4426307367c1'), 'autor_nombre': 'Ela', 'autor_email': 'gchb9@hotmail.com', 'created_at': datetime.datetime(2026, 3, 24, 0, 36, 33, 93042, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}} {'type': 'missing', 'loc': ('response', 'comentario_estado'), 'msg': 'Field required', 'input': {'log_id': UUID('0a0469d9-7628-4eb9-9394-ca8215880d36'), 'mensaje': 'Se puede poner el grafico de queque dentro de proyectos', 'usuario_id': UUID('5fc2a19e-8044-4e43-bfd9-4426307367c1'), 'autor_nombre': 'Ela', 'autor_email': 'gchb9@hotmail.com', 'created_at': datetime.datetime(2026, 3, 24, 0, 36, 33, 93042, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}} {'type': 'missing', 'loc': ('response', 'updated_at'), 'msg': 'Field required', 'input': {'log_id': UUID('0a0469d9-7628-4eb9-9394-ca8215880d36'), 'mensaje': 'Se puede poner el grafico de queque dentro de proyectos', 'usuario_id': UUID('5fc2a19e-8044-4e43-bfd9-4426307367c1'), 'autor_nombre': 'Ela', 'autor_email': 'gchb9@hotmail.com', 'created_at': datetime.datetime(2026, 3, 24, 0, 36, 33, 93042, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}} File "/app/app/api/routes/log_entries.py", line 18, in create_log_entry POST /log
