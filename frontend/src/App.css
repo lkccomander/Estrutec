@@ -1568,13 +1568,19 @@ h2 {
   min-width: 0;
   color: #e2e8f0;
   font-size: 0.92rem;
-  line-height: 0.5;
+  line-height: 1.2;
+  align-self: start;
+  overflow-wrap: anywhere;
 }
 
 .excel-type,
 .excel-balance,
 .excel-amount {
   font-weight: 700;
+}
+
+.excel-type {
+  white-space: normal;
 }
 
 .excel-row > .excel-amount {
