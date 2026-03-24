@@ -744,8 +744,14 @@ h2 {
 }
 
 .project-balance-badge {
-  border-color: rgba(34, 197, 94, 0.42);
-  color: #86efac;
+  border-color: rgba(29, 78, 216, 0.4);
+  color: #93c5fd;
+}
+
+.project-budget-blue-badge {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: rgba(96, 165, 250, 0.42);
+  color: #bfdbfe;
 }
 
 .project-line-badge.is-muted {
@@ -902,15 +908,19 @@ h2 {
 }
 
 .project-dashboard-stat-total {
-  color: #fcd34d;
+  color: #bfdbfe;
 }
 
 .project-dashboard-stat-balance {
-  color: #86efac;
+  color: #93c5fd;
 }
 
 .project-dashboard-stat-consumed {
-  color: #fda4af;
+  color: #dbeafe;
+}
+
+.project-budget-total-line {
+  stroke: #60a5fa;
 }
 
 .project-area-stat h4 {

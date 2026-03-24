@@ -20,6 +20,16 @@ type Project = {
   balance_proyecto: string
 }
 
+type Budget = {
+  presupuesto_id: string
+  proyecto_id: string
+  monto_total: string
+  categoria: string
+  moneda: 'CRC' | 'USD'
+  saldo_disponible: string
+  estado: string
+}
+
 type ProjectForm = {
   nombre_proyecto: string
   fecha_inicio_proyecto: string
@@ -38,6 +48,7 @@ type ActionFeedbackState = {
 
 type ProjectsDashboardProps = {
   projects: Project[]
+  budgets: Budget[]
   projectFilter: 'active' | 'all' | 'archived'
   projectForm: ProjectForm
   selectedProjectId: string
@@ -96,6 +107,7 @@ function buildSplineAreaPath(points: ChartPoint[], baselineY: number) {
 
 export function ProjectsDashboard({
   projects,
+  budgets,
   projectFilter,
   projectForm,
   selectedProjectId,
@@ -139,26 +151,34 @@ export function ProjectsDashboard({
       consumedPercent,
     }
   })
+  const selectedProjectBudgets = selectedProjectId
+    ? budgets.filter((budget) => budget.proyecto_id === selectedProjectId)
+    : []
+  const budgetChartRows = selectedProjectBudgets.map((budget) => ({
+    ...budget,
+    total: Number(budget.monto_total),
+    balance: Number(budget.saldo_disponible),
+  }))
   const chartWidth = 900
   const chartHeight = 320
   const chartPadding = { top: 26, right: 24, bottom: 54, left: 58 }
   const chartInnerWidth = chartWidth - chartPadding.left - chartPadding.right
   const chartInnerHeight = chartHeight - chartPadding.top - chartPadding.bottom
-  const chartMaxValue = Math.max(...projectPlotRows.map((project) => project.total), 1)
+  const chartMaxValue = Math.max(...budgetChartRows.map((budget) => budget.total), 1)
   const chartStepX =
-    projectPlotRows.length > 1 ? chartInnerWidth / Math.max(projectPlotRows.length - 1, 1) : 0
+    budgetChartRows.length > 1 ? chartInnerWidth / Math.max(budgetChartRows.length - 1, 1) : 0
   const chartBaselineY = chartPadding.top + chartInnerHeight
-  const totalSeriesPoints = projectPlotRows.map((project, index) => ({
+  const totalSeriesPoints = budgetChartRows.map((budget, index) => ({
     x:
       chartPadding.left +
-      (projectPlotRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
-    y: chartBaselineY - (project.total / chartMaxValue) * chartInnerHeight,
+      (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
+    y: chartBaselineY - (budget.total / chartMaxValue) * chartInnerHeight,
   }))
-  const balanceSeriesPoints = projectPlotRows.map((project, index) => ({
+  const balanceSeriesPoints = budgetChartRows.map((budget, index) => ({
     x:
       chartPadding.left +
-      (projectPlotRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
-    y: chartBaselineY - (project.balance / chartMaxValue) * chartInnerHeight,
+      (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index),
+    y: chartBaselineY - (budget.balance / chartMaxValue) * chartInnerHeight,
   }))
   const totalSplinePath = buildSplinePath(totalSeriesPoints)
   const balanceSplinePath = buildSplinePath(balanceSeriesPoints)
@@ -166,20 +186,20 @@ export function ProjectsDashboard({
   const balanceAreaPath = buildSplineAreaPath(balanceSeriesPoints, chartBaselineY)
   const chartStats = [
     {
-      label: 'Presupuesto visible',
-      value: formatProjectTotal(projectPlotRows.reduce((sum, project) => sum + project.total, 0).toFixed(2)),
+      label: 'Total rubros',
+      value: formatProjectTotal(budgetChartRows.reduce((sum, budget) => sum + budget.total, 0).toFixed(2)),
       toneClass: 'project-dashboard-stat-total',
     },
     {
-      label: 'Balance visible',
-      value: formatProjectTotal(projectPlotRows.reduce((sum, project) => sum + project.balance, 0).toFixed(2)),
+      label: 'Disponible rubros',
+      value: formatProjectTotal(budgetChartRows.reduce((sum, budget) => sum + budget.balance, 0).toFixed(2)),
       toneClass: 'project-dashboard-stat-balance',
     },
     {
       label: 'Consumo promedio',
       value: `${(
-        projectPlotRows.reduce((sum, project) => sum + project.consumedPercent, 0) /
-        Math.max(projectPlotRows.length, 1)
+        budgetChartRows.reduce((sum, budget) => sum + (budget.total > 0 ? ((budget.total - budget.balance) / budget.total) * 100 : 0), 0) /
+        Math.max(budgetChartRows.length, 1)
       ).toFixed(1)}%`,
       toneClass: 'project-dashboard-stat-consumed',
     },
@@ -375,14 +395,14 @@ export function ProjectsDashboard({
             <option value="archived">Archivados</option>
           </select>
         </div>
-        {projectPlotRows.length ? (
+        {budgetChartRows.length ? (
           <div className="project-area-chart-shell project-dashboard-spline-shell">
             <div className="project-area-chart-header">
               <span className="project-area-chart-badge project-line-badge project-balance-badge">
-                Balance spline
+                Saldo disponible
               </span>
-              <span className="project-area-chart-badge project-total-badge">
-                Presupuesto spline
+              <span className="project-area-chart-badge project-total-badge project-budget-blue-badge">
+                Monto total
               </span>
             </div>
 
@@ -390,16 +410,16 @@ export function ProjectsDashboard({
               className="project-area-chart"
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
               role="img"
-              aria-label="Spline area chart de balance y presupuesto por proyecto"
+              aria-label="Spline area chart de rubros del proyecto seleccionado"
             >
               <defs>
                 <linearGradient id="projectTotalAreaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.04" />
+                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.52" />
+                  <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.05" />
                 </linearGradient>
                 <linearGradient id="projectBalanceAreaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0.05" />
+                  <stop offset="0%" stopColor="#1d4ed8" stopOpacity="0.48" />
+                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.06" />
                 </linearGradient>
               </defs>
 
@@ -425,44 +445,44 @@ export function ProjectsDashboard({
 
               <path className="project-spline-area project-spline-area-total" d={totalAreaPath} />
               <path className="project-spline-area project-spline-area-balance" d={balanceAreaPath} />
-              <path className="project-total-line project-spline-line" d={totalSplinePath} />
-              <path className="project-history-line project-spline-line" d={balanceSplinePath} style={{ stroke: '#22c55e' }} />
+              <path className="project-total-line project-spline-line project-budget-total-line" d={totalSplinePath} />
+              <path className="project-history-line project-spline-line" d={balanceSplinePath} style={{ stroke: '#1d4ed8' }} />
 
               {totalSeriesPoints.map((point, index) => (
                 <circle
-                  key={`total-${projectPlotRows[index].proyecto_id}`}
+                  key={`total-${budgetChartRows[index].presupuesto_id}`}
                   className="project-total-point"
                   cx={point.x}
                   cy={point.y}
                   r="3"
-                  style={{ fill: '#fbbf24', animationDelay: `${0.18 + index * 0.05}s` }}
+                  style={{ fill: '#60a5fa', animationDelay: `${0.18 + index * 0.05}s` }}
                 />
               ))}
               {balanceSeriesPoints.map((point, index) => (
                 <circle
-                  key={`balance-${projectPlotRows[index].proyecto_id}`}
+                  key={`balance-${budgetChartRows[index].presupuesto_id}`}
                   className="project-history-point"
                   cx={point.x}
                   cy={point.y}
                   r="3.5"
-                  style={{ fill: '#22c55e', animationDelay: `${0.24 + index * 0.05}s` }}
+                  style={{ fill: '#1d4ed8', animationDelay: `${0.24 + index * 0.05}s` }}
                 />
               ))}
 
-              {projectPlotRows.map((project, index) => {
+              {budgetChartRows.map((budget, index) => {
                 const x =
                   chartPadding.left +
-                  (projectPlotRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index)
+                  (budgetChartRows.length === 1 ? chartInnerWidth / 2 : chartStepX * index)
 
                 return (
                   <text
-                    key={project.proyecto_id}
+                    key={budget.presupuesto_id}
                     className="project-area-x-label"
                     x={x}
                     y={chartHeight - 18}
                     textAnchor="middle"
                   >
-                    {project.nombre_proyecto.slice(0, 10)}
+                    {budget.categoria.slice(0, 10)}
                   </text>
                 )
               })}
@@ -477,6 +497,8 @@ export function ProjectsDashboard({
               ))}
             </div>
           </div>
+        ) : selectedProjectId ? (
+          <p className="empty">El proyecto seleccionado no tiene rubros para representar en el spline chart.</p>
         ) : null}
         <div className="list-scroll">
           {projectPlotRows.map((project) => (

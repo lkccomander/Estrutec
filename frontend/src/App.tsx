@@ -3341,6 +3341,7 @@ function App() {
               {budgetSectionView === 'projects' ? (
                 <ProjectsDashboard
                   projects={projects}
+                  budgets={budgets}
                   projectFilter={projectFilter}
                   projectForm={projectForm}
                   selectedProjectId={selectedProjectId}
