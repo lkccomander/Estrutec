@@ -1330,6 +1330,51 @@ function App() {
                     ) : null}
                   </div>
                 ) : null}
+                <div className="excel-row-detail">
+                  <div className="action-column">
+                    <button
+                      className="tab-btn"
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setSelectedReceiptId(receipt.comprobante_id)
+                      }}
+                    >
+                      <span className="button-with-icon">
+                        <MdAttachFile aria-hidden="true" />
+                        <span>Show attachments</span>
+                      </span>
+                    </button>
+                    {selectedReceiptId === receipt.comprobante_id ? (
+                      attachments.length ? (
+                        <div className="receipt-attachment-inline-list">
+                          {attachments.map((attachment) => (
+                            <article
+                              className="receipt-attachment-inline-item"
+                              key={attachment.adjunto_id}
+                            >
+                              <a
+                                className="attachment-link"
+                                href={attachment.cdn_path}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(event) => event.stopPropagation()}
+                                title={attachment.cdn_path}
+                              >
+                                {attachment.nombre_archivo ?? attachment.cdn_path}
+                              </a>
+                              <p className="list-meta">
+                                {attachment.tipo_archivo || 'Tipo no indicado'} // Orden {attachment.orden}
+                              </p>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="list-meta">Este comprobante no tiene adjuntos registrados.</p>
+                      )
+                    ) : null}
+                  </div>
+                </div>
               </article>
             ))}
           </div>

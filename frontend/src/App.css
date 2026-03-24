@@ -1485,6 +1485,18 @@ h2 {
   margin: 0;
 }
 
+.receipt-attachment-inline-list {
+  display: grid;
+  gap: 8px;
+}
+
+.receipt-attachment-inline-item {
+  padding: 10px 12px;
+  border: 1px solid #23324b;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.52);
+}
+
 .attachment-link {
   display: inline-block;
   margin-top: 2px;
@@ -1872,6 +1884,11 @@ body.light-theme .attachment-link {
 
 body.light-theme .attachment-link:hover {
   color: #1e3a8a;
+}
+
+body.light-theme .receipt-attachment-inline-item {
+  background: rgba(226, 232, 240, 0.7);
+  border-color: rgba(100, 116, 139, 0.4);
 }
 
 body.light-theme .sync-status {
