@@ -342,3 +342,21 @@ Motivo:
 - estabilizar el ritmo de cambios recientes antes de seguir agregando funcionalidades
 - reducir riesgo de desplegar codigo roto o migraciones incompletas
 - separar con claridad validacion, despliegue y configuracion de entorno
+
+## 21. El modulo `/log` no debe aceptar secretos ni credenciales
+
+Se aterrizo la politica de logging seguro con una primera regla de enforcement en backend.
+
+Decision:
+
+- el modulo `/log` debe rechazar mensajes y comentarios que contengan patrones sensibles
+- la validacion inicial bloquea al menos referencias a `password`, `Authorization`, `Bearer`, `token`, `cookie`, `DATABASE_URL`, `.env` y `api_key`
+- el saneamiento de texto se centraliza en una utilidad reutilizable para poder extenderse a otros puntos de log
+- el rechazo debe responder con error controlado `422` y mensaje claro para el usuario
+- se agregan pruebas unitarias para asegurar que el servicio no persista contenido sensible y que siga normalizando mensajes seguros
+
+Motivo:
+
+- evitar que el log de negocio termine convirtiendose en un deposito de secretos operativos
+- empezar a llevar la politica formal de logging seguro desde documento a codigo
+- dejar una base reutilizable antes de agregar `request_id` y endurecimiento adicional
