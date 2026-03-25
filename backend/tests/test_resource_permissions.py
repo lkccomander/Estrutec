@@ -206,6 +206,28 @@ def test_log_entries_are_global_for_privileged_users() -> None:
     assert entries == [{"scope": "all"}]
 
 
+def test_log_entry_rejects_sensitive_message_content() -> None:
+    service = LogEntryService(FakeLogEntryRepository())
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.create_entry("Authorization: Bearer secret-token", "user-1")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "El campo mensaje contiene informacion sensible. "
+        "Elimina secretos, tokens o credenciales antes de guardarlo."
+    )
+
+
+def test_log_entry_strips_safe_message_before_persisting() -> None:
+    repository = FakeLogEntryRepository()
+    service = LogEntryService(repository)
+
+    entry = service.create_entry("  Seguimiento operativo del caso  ", "user-1")
+
+    assert entry["mensaje"] == "Seguimiento operativo del caso"
+
+
 def test_log_owner_can_complete_own_entry() -> None:
     service = LogEntryService(FakeLogEntryRepository())
 
@@ -213,6 +235,24 @@ def test_log_owner_can_complete_own_entry() -> None:
 
     assert entry["estado"] == "COMPLETADO"
     assert entry["comentario_estado"] == "Listo"
+
+
+def test_log_entry_rejects_sensitive_resolution_comment() -> None:
+    service = LogEntryService(FakeLogEntryRepository())
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.update_entry(
+            "log-1",
+            "COMPLETADO",
+            "Password temporal: Admin123!",
+            {"usuario_id": "user-1", "rol": "REGISTRADOR"},
+        )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "El campo comentario_estado contiene informacion sensible. "
+        "Elimina secretos, tokens o credenciales antes de guardarlo."
+    )
 
 
 def test_non_owner_cannot_update_other_user_log_entry() -> None:

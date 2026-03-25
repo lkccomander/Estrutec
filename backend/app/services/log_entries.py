@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 
 from app.repositories.log_entries import LogEntryRepository
+from app.services.log_sanitizer import ensure_safe_log_text
 from app.schemas.roles import UserRole
 
 
@@ -17,7 +18,8 @@ class LogEntryService:
         return self._repository.list_entries()
 
     def create_entry(self, mensaje: str, usuario_id: str) -> dict:
-        return self._repository.create_entry({"mensaje": mensaje, "usuario_id": usuario_id})
+        safe_message = ensure_safe_log_text(mensaje, field_name="mensaje")
+        return self._repository.create_entry({"mensaje": safe_message, "usuario_id": usuario_id})
 
     def update_entry(self, log_id: str, estado: str, comentario_estado: str | None, current_user: dict) -> dict:
         entry = self._repository.get_entry(log_id)
@@ -38,6 +40,9 @@ class LogEntryService:
             log_id,
             {
                 "estado": normalized_status,
-                "comentario_estado": comentario_estado.strip() if comentario_estado and comentario_estado.strip() else None,
+                "comentario_estado": ensure_safe_log_text(
+                    comentario_estado,
+                    field_name="comentario_estado",
+                ),
             },
         )
