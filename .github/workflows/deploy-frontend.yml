@@ -34,6 +34,7 @@ jobs:
         run: npm install --global @railway/cli
 
       - name: Deploy frontend service
+        working-directory: frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_FRONTEND_SERVICE: ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
