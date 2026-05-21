@@ -9,6 +9,20 @@ load_dotenv()
 _DEFAULT_JWT_SECRET = "change-this-in-production"
 
 
+def _get_startup_db_retry_attempts() -> int:
+    configured = os.getenv("STARTUP_DB_RETRY_ATTEMPTS")
+    if configured is not None:
+        return int(configured)
+    return 6 if os.getenv("ENV", "dev").lower() == "prod" else 1
+
+
+def _get_startup_db_retry_delay_seconds() -> float:
+    configured = os.getenv("STARTUP_DB_RETRY_DELAY_SECONDS")
+    if configured is not None:
+        return float(configured)
+    return 5.0 if os.getenv("ENV", "dev").lower() == "prod" else 0.0
+
+
 class Settings(BaseModel):
     env: str = os.getenv("ENV", "dev").lower()
     app_name: str = "Elatilo API"
@@ -34,6 +48,8 @@ class Settings(BaseModel):
     rate_limit_window_seconds: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
     rate_limit_public_max_requests: int = int(os.getenv("RATE_LIMIT_PUBLIC_MAX_REQUESTS", "60"))
     rate_limit_auth_max_requests: int = int(os.getenv("RATE_LIMIT_AUTH_MAX_REQUESTS", "5"))
+    startup_db_retry_attempts: int = _get_startup_db_retry_attempts()
+    startup_db_retry_delay_seconds: float = _get_startup_db_retry_delay_seconds()
     trusted_proxy_headers: bool = os.getenv("TRUSTED_PROXY_HEADERS", "true").lower() in {
         "1",
         "true",

@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import time
 
 import psycopg
 from fastapi import FastAPI, Request, status
@@ -88,6 +89,20 @@ def _run_startup_migrations() -> None:
         ) from exc
 
 
+def _run_startup_migrations_with_retry() -> None:
+    attempts = max(1, settings.startup_db_retry_attempts)
+    delay_seconds = max(0.0, settings.startup_db_retry_delay_seconds)
+
+    for attempt in range(1, attempts + 1):
+        try:
+            _run_startup_migrations()
+            return
+        except RuntimeError:
+            if attempt == attempts:
+                raise
+            time.sleep(delay_seconds)
+
+
 def _friendly_validation_message(exc: RequestValidationError) -> str:
     for error in exc.errors():
         location = error.get("loc", ())
@@ -108,7 +123,7 @@ def _friendly_validation_message(exc: RequestValidationError) -> str:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    _run_startup_migrations()
+    _run_startup_migrations_with_retry()
     yield
 
 
