@@ -22,3 +22,5 @@ ini.bat
 ininpm.bat
 iniciar_todo.bat
 error.md
+scripts/
+scripts/run_sql_tests.ps1

@@ -10,6 +10,9 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+_TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/test_db"
+
+
 def _build_app(monkeypatch, **env_vars):
     for key, value in env_vars.items():
         monkeypatch.setenv(key, value)
@@ -49,7 +52,7 @@ def test_health_db_endpoint_is_hidden_in_production(monkeypatch) -> None:
     app = _build_app(
         monkeypatch,
         ENV="prod",
-        DATABASE_URL=os.environ["DATABASE_URL"],
+        DATABASE_URL=_TEST_DATABASE_URL,
         JWT_SECRET_KEY="x" * 48,
     )
 
@@ -59,12 +62,26 @@ def test_health_db_endpoint_is_hidden_in_production(monkeypatch) -> None:
     assert response.status_code == 404
 
 
-def test_docs_and_openapi_are_disabled_in_production(monkeypatch) -> None:
+def test_docs_and_openapi_are_enabled_in_production_by_default(monkeypatch) -> None:
     app = _build_app(
         monkeypatch,
         ENV="prod",
-        DATABASE_URL=os.environ["DATABASE_URL"],
+        DATABASE_URL=_TEST_DATABASE_URL,
         JWT_SECRET_KEY="x" * 48,
+    )
+
+    assert app.docs_url == "/docs"
+    assert app.redoc_url == "/redoc"
+    assert app.openapi_url == "/openapi.json"
+
+
+def test_docs_and_openapi_can_be_disabled_with_env(monkeypatch) -> None:
+    app = _build_app(
+        monkeypatch,
+        ENV="prod",
+        DATABASE_URL=_TEST_DATABASE_URL,
+        JWT_SECRET_KEY="x" * 48,
+        ENABLE_API_DOCS="false",
     )
 
     assert app.docs_url is None

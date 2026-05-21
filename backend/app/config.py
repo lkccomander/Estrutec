@@ -23,6 +23,13 @@ def _get_startup_db_retry_delay_seconds() -> float:
     return 5.0 if os.getenv("ENV", "dev").lower() == "prod" else 0.0
 
 
+def _get_api_docs_enabled() -> bool:
+    configured = os.getenv("ENABLE_API_DOCS")
+    if configured is None:
+        return True
+    return configured.lower() in {"1", "true", "yes", "on"}
+
+
 class Settings(BaseModel):
     env: str = os.getenv("ENV", "dev").lower()
     app_name: str = "Elatilo API"
@@ -50,6 +57,7 @@ class Settings(BaseModel):
     rate_limit_auth_max_requests: int = int(os.getenv("RATE_LIMIT_AUTH_MAX_REQUESTS", "5"))
     startup_db_retry_attempts: int = _get_startup_db_retry_attempts()
     startup_db_retry_delay_seconds: float = _get_startup_db_retry_delay_seconds()
+    api_docs_enabled: bool = _get_api_docs_enabled()
     trusted_proxy_headers: bool = os.getenv("TRUSTED_PROXY_HEADERS", "true").lower() in {
         "1",
         "true",
